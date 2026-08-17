@@ -51,6 +51,33 @@ public class OrderController {
     }
 
     /**
+     * GET /api/orders/{id}
+     * Retrieve single order details
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<OrderResponseDTO>> getOrderById(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to view this order"));
+        }
+
+        try {
+            String userEmail = auth.getName();
+            return orderService.getOrderById(userEmail, id)
+                    .map(order -> ResponseEntity.ok(ApiResponse.success("Order retrieved", order)))
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(ApiResponse.error("Order not found with ID: " + id)));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve order: " + e.getMessage()));
+        }
+    }
+
+    /**
      * GET /api/orders/my-orders
      * Retrieve all orders placed by the current user
      */
@@ -113,12 +140,44 @@ public class OrderController {
             String userEmail = auth.getName();
             OrderResponseDTO updated = orderService.updateOrderStatus(userEmail, id, request.getStatus());
             return ResponseEntity.ok(ApiResponse.success("Order status updated to " + request.getStatus(), updated));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to update status: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * DELETE /api/orders/{id}
+     * Cancel or delete order
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to cancel this order"));
+        }
+
+        try {
+            String userEmail = auth.getName();
+            boolean deleted = orderService.deleteOrder(userEmail, id);
+            if (deleted) {
+                return ResponseEntity.ok(ApiResponse.success("Order removed successfully", null));
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Order not found with ID: " + id));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to delete order: " + e.getMessage()));
         }
     }
 }

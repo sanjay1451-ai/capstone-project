@@ -162,4 +162,59 @@ class OrderServiceTest {
 
         assertEquals("SHIPPED", updated.getOrderStatus());
     }
+
+    @Test
+    @DisplayName("Should reject purchase when product is already sold")
+    void testCreateOrderSoldProductRejected() {
+        User buyerUser = new User("Buyer User", "buyer@example.com", "hash", "123", "Main St", null, "ROLE_USER");
+        buyerUser.setId(10L);
+
+        when(userRepository.findByEmail("buyer@example.com")).thenReturn(Optional.of(buyerUser));
+
+        ProductDTO pDto = new ProductDTO();
+        pDto.setSellerId(5L);
+        pDto.setTitle("iPhone 14 Pro");
+        pDto.setCategory("Smartphones");
+        pDto.setCondition("LIKE_NEW");
+        pDto.setPrice(new BigDecimal("799.00"));
+        pDto.setStatus("SOLD");
+        var createdProduct = productService.createProduct(pDto);
+
+        CreateOrderRequest req = new CreateOrderRequest(createdProduct.getId(), 1, "123 Main St", null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderService.createOrder("buyer@example.com", req));
+        assertTrue(ex.getMessage().contains("no longer available"));
+    }
+
+    @Test
+    @DisplayName("Should retrieve order by ID for authorized user")
+    void testGetOrderByIdSuccess() {
+        User buyerUser = new User("Buyer User", "buyer@example.com", "hash", "123", "Main St", null, "ROLE_USER");
+        buyerUser.setId(10L);
+
+        when(userRepository.findByEmail("buyer@example.com")).thenReturn(Optional.of(buyerUser));
+
+        ProductDTO pDto = new ProductDTO();
+        pDto.setSellerId(5L);
+        pDto.setTitle("iPhone 14 Pro");
+        pDto.setCategory("Smartphones");
+        pDto.setCondition("LIKE_NEW");
+        pDto.setPrice(new BigDecimal("799.00"));
+        var createdProduct = productService.createProduct(pDto);
+
+        Order order = new Order();
+        order.setId(105L);
+        order.setBuyerId(10L);
+        order.setProductId(createdProduct.getId());
+        order.setOrderStatus("PENDING");
+        order.setQuantity(1);
+        order.setTotalPrice(new BigDecimal("799.00"));
+
+        when(orderRepository.findById(105L)).thenReturn(Optional.of(order));
+
+        var fetched = orderService.getOrderById("buyer@example.com", 105L);
+        assertTrue(fetched.isPresent());
+        assertEquals(105L, fetched.get().getId());
+    }
 }

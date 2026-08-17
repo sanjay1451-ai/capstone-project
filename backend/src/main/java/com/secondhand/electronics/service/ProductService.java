@@ -301,6 +301,7 @@ public class ProductService {
                     dto.getOriginalPrice(), dto.getLocation(),
                     dto.getImageUrls() != null && !dto.getImageUrls().isEmpty() ? dto.getImageUrls() : List.of("https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800")
             );
+            cached.setStatus(dto.getStatus() != null ? dto.getStatus().trim().toUpperCase() : "AVAILABLE");
             cached.setSellerName(sellerName);
             cached.setSellerEmail(sellerEmail);
             fallbackCache.put(newId, cached);

@@ -282,6 +282,9 @@ export default function Home() {
           product={checkoutProduct}
           onClose={() => setCheckoutProduct(null)}
           onOrderPlaced={() => {
+            loadFeatured();
+          }}
+          onNavigateToDashboard={(tab) => {
             setActiveTab('dashboard');
           }}
         />

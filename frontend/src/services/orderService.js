@@ -17,6 +17,21 @@ export const orderService = {
   },
 
   /**
+   * Get single order by ID
+   * @param {number} orderId 
+   * @returns {Promise<Object>}
+   */
+  async getOrderById(orderId) {
+    try {
+      const response = await api.get(`/api/orders/${orderId}`);
+      return response.data?.data;
+    } catch (error) {
+      console.error(`[OrderService] Get order ${orderId} error:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Get orders placed by current user
    * @returns {Promise<Array>}
    */
@@ -56,6 +71,21 @@ export const orderService = {
       return response.data?.data;
     } catch (error) {
       console.error('[OrderService] Update status error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete or cancel order
+   * @param {number} orderId 
+   * @returns {Promise<boolean>}
+   */
+  async deleteOrder(orderId) {
+    try {
+      await api.delete(`/api/orders/${orderId}`);
+      return true;
+    } catch (error) {
+      console.error('[OrderService] Delete order error:', error);
       throw error;
     }
   }

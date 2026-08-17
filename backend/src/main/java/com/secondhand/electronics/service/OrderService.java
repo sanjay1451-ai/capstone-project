@@ -2,19 +2,21 @@ package com.secondhand.electronics.service;
 
 import com.secondhand.electronics.dto.CreateOrderRequest;
 import com.secondhand.electronics.dto.OrderResponseDTO;
+import com.secondhand.electronics.dto.ProductDTO;
 import com.secondhand.electronics.dto.ProductResponseDTO;
 import com.secondhand.electronics.entity.Order;
-import com.secondhand.electronics.entity.Product;
 import com.secondhand.electronics.repository.OrderRepository;
 import com.secondhand.electronics.repository.ProductRepository;
 import com.secondhand.electronics.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -46,6 +48,7 @@ public class OrderService {
         this.authService = authService;
     }
 
+    @Transactional
     public OrderResponseDTO createOrder(String userEmail, CreateOrderRequest request) {
         var userDto = authService.getCurrentUser(userEmail);
         Long buyerId = userDto.getId();
@@ -57,6 +60,10 @@ public class OrderService {
 
         if (productDto.getSellerId() != null && productDto.getSellerId().equals(buyerId)) {
             throw new IllegalArgumentException("You cannot purchase your own listed product.");
+        }
+
+        if ("SOLD".equalsIgnoreCase(productDto.getStatus()) || "EXCHANGED".equalsIgnoreCase(productDto.getStatus())) {
+            throw new IllegalArgumentException("This product is no longer available for purchase.");
         }
 
         int quantity = request.getQuantity() != null && request.getQuantity() > 0 ? request.getQuantity() : 1;
@@ -84,7 +91,63 @@ public class OrderService {
         }
         fallbackOrders.put(savedOrder.getId(), savedOrder);
 
+        // Mark product as SOLD
+        try {
+            ProductDTO updateDto = new ProductDTO();
+            updateDto.setTitle(productDto.getTitle());
+            updateDto.setDescription(productDto.getDescription());
+            updateDto.setCategory(productDto.getCategory());
+            updateDto.setBrand(productDto.getBrand());
+            updateDto.setModel(productDto.getModel());
+            updateDto.setCondition(productDto.getCondition());
+            updateDto.setPrice(productDto.getPrice());
+            updateDto.setOriginalPrice(productDto.getOriginalPrice());
+            updateDto.setLocation(productDto.getLocation());
+            updateDto.setStatus("SOLD");
+            updateDto.setImageUrls(productDto.getImageUrls());
+            productService.updateProduct(productDto.getId(), updateDto);
+            productDto.setStatus("SOLD");
+        } catch (Exception ignored) {}
+
         return mapToOrderResponse(savedOrder, productDto, userDto.getName(), userDto.getEmail());
+    }
+
+    public Optional<OrderResponseDTO> getOrderById(String userEmail, Long orderId) {
+        var userDto = authService.getCurrentUser(userEmail);
+
+        Order order = null;
+        try {
+            order = orderRepository.findById(orderId).orElse(null);
+        } catch (Exception ignored) {}
+
+        if (order == null) {
+            order = fallbackOrders.get(orderId);
+        }
+
+        if (order == null) {
+            return Optional.empty();
+        }
+
+        ProductResponseDTO productDto = productService.getProductById(order.getProductId()).orElse(null);
+        boolean isBuyer = order.getBuyerId().equals(userDto.getId());
+        boolean isSeller = productDto != null && productDto.getSellerId() != null && productDto.getSellerId().equals(userDto.getId());
+        boolean isAdmin = "ROLE_ADMIN".equals(userDto.getRole());
+
+        if (!isBuyer && !isSeller && !isAdmin) {
+            throw new SecurityException("You do not have permission to view this order.");
+        }
+
+        String buyerName = "Customer";
+        String buyerEmail = "customer@volttrade.com";
+        try {
+            var buyer = authService.getUserById(order.getBuyerId());
+            if (buyer != null) {
+                buyerName = buyer.getName();
+                buyerEmail = buyer.getEmail();
+            }
+        } catch (Exception ignored) {}
+
+        return Optional.of(mapToOrderResponse(order, productDto, buyerName, buyerEmail));
     }
 
     public List<OrderResponseDTO> getMyOrders(String userEmail) {
@@ -180,10 +243,30 @@ public class OrderService {
         boolean isAdmin = "ROLE_ADMIN".equals(userDto.getRole());
 
         if (!isSeller && !isBuyer && !isAdmin) {
-            throw new IllegalArgumentException("You are not authorized to update this order's status.");
+            throw new SecurityException("You are not authorized to update this order's status.");
         }
 
         order.setOrderStatus(status.toUpperCase());
+
+        // If cancelled, make product AVAILABLE again
+        if ("CANCELLED".equalsIgnoreCase(status) && productDto != null) {
+            try {
+                ProductDTO updateDto = new ProductDTO();
+                updateDto.setTitle(productDto.getTitle());
+                updateDto.setDescription(productDto.getDescription());
+                updateDto.setCategory(productDto.getCategory());
+                updateDto.setBrand(productDto.getBrand());
+                updateDto.setModel(productDto.getModel());
+                updateDto.setCondition(productDto.getCondition());
+                updateDto.setPrice(productDto.getPrice());
+                updateDto.setOriginalPrice(productDto.getOriginalPrice());
+                updateDto.setLocation(productDto.getLocation());
+                updateDto.setStatus("AVAILABLE");
+                updateDto.setImageUrls(productDto.getImageUrls());
+                productService.updateProduct(productDto.getId(), updateDto);
+                productDto.setStatus("AVAILABLE");
+            } catch (Exception ignored) {}
+        }
 
         Order saved = order;
         try {
@@ -203,6 +286,37 @@ public class OrderService {
         } catch (Exception ignored) {}
 
         return mapToOrderResponse(saved, productDto, buyerName, buyerEmail);
+    }
+
+    public boolean deleteOrder(String userEmail, Long orderId) {
+        var userDto = authService.getCurrentUser(userEmail);
+
+        Order order = null;
+        try {
+            order = orderRepository.findById(orderId).orElse(null);
+        } catch (Exception ignored) {}
+
+        if (order == null) {
+            order = fallbackOrders.get(orderId);
+        }
+
+        if (order == null) {
+            return false;
+        }
+
+        boolean isBuyer = order.getBuyerId().equals(userDto.getId());
+        boolean isAdmin = "ROLE_ADMIN".equals(userDto.getRole());
+
+        if (!isBuyer && !isAdmin) {
+            throw new SecurityException("You do not have permission to delete this order.");
+        }
+
+        try {
+            orderRepository.deleteById(orderId);
+        } catch (Exception ignored) {}
+
+        fallbackOrders.remove(orderId);
+        return true;
     }
 
     private OrderResponseDTO mapToOrderResponse(Order order, ProductResponseDTO product, String buyerName, String buyerEmail) {

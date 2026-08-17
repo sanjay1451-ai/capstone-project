@@ -1,9 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Zap, PlusCircle, ShoppingBag, Layers, Activity, User, LogIn, UserPlus, LogOut, Shield, ChevronDown } from 'lucide-react';
+import { Zap, PlusCircle, ShoppingBag, Layers, Activity, User, LogIn, UserPlus, LogOut, Shield, ChevronDown, ArrowRightLeft, Heart, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
-export default function Navbar({ activeTab, onSelectTab, onOpenCreateModal, onOpenAuthModal, backendStatus }) {
+export default function Navbar({
+  activeTab,
+  onSelectTab,
+  onOpenCreateModal,
+  onOpenAuthModal,
+  backendStatus
+}) {
   const { user, isAuthenticated, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -19,15 +25,15 @@ export default function Navbar({ activeTab, onSelectTab, onOpenCreateModal, onOp
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleProfileClick = () => {
+  const handleTabClick = (tab) => {
     setIsDropdownOpen(false);
-    onSelectTab('profile');
+    onSelectTab(tab);
   };
 
   const handleLogoutClick = () => {
     setIsDropdownOpen(false);
     logout();
-    if (activeTab === 'profile') {
+    if (activeTab === 'dashboard' || activeTab === 'profile') {
       onSelectTab('home');
     }
   };
@@ -68,6 +74,15 @@ export default function Navbar({ activeTab, onSelectTab, onOpenCreateModal, onOp
             <Layers size={16} />
             <span>Categories</span>
           </button>
+          {isAuthenticated && (
+            <button 
+              className={`nav-link-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => onSelectTab('dashboard')}
+            >
+              <LayoutDashboard size={16} />
+              <span>Dashboard</span>
+            </button>
+          )}
           <button 
             className={`nav-link-btn ${activeTab === 'health' ? 'active' : ''}`}
             onClick={() => onSelectTab('health')}
@@ -150,8 +165,15 @@ export default function Navbar({ activeTab, onSelectTab, onOpenCreateModal, onOp
 
                   <div className="user-menu-items">
                     <button
+                      className={`menu-item-btn ${activeTab === 'dashboard' ? 'item-active' : ''}`}
+                      onClick={() => handleTabClick('dashboard')}
+                    >
+                      <LayoutDashboard size={16} />
+                      <span>User Dashboard</span>
+                    </button>
+                    <button
                       className={`menu-item-btn ${activeTab === 'profile' ? 'item-active' : ''}`}
-                      onClick={handleProfileClick}
+                      onClick={() => handleTabClick('profile')}
                     >
                       <User size={16} />
                       <span>My Profile & Settings</span>

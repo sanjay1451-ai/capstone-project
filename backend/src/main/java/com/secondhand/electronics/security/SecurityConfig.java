@@ -52,12 +52,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/*/images").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/*/reviews").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/*/rating-summary").permitAll()
                         // Error handling
                         .requestMatchers("/error").permitAll()
 
                         // Protected User Profile & Resource Modification Endpoints
                         .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/auth/profile").authenticated()
+                        .requestMatchers("/api/orders/**").authenticated()
+                        .requestMatchers("/api/exchanges/**").authenticated()
+                        .requestMatchers("/api/favorites/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/products/*/reviews").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/products/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/products/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**").authenticated()

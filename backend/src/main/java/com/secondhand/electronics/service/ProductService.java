@@ -213,6 +213,9 @@ public class ProductService {
                     dto.getOriginalPrice(), dto.getLocation(),
                     dto.getImageUrls() != null ? dto.getImageUrls() : List.of("https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800")
             );
+            if (dto.getSellerId() != null) {
+                cached.setSellerId(dto.getSellerId());
+            }
             fallbackCache.put(newId, cached);
             return cached;
         }

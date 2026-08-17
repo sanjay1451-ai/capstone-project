@@ -1,7 +1,7 @@
 # Second-Hand Electronics Trading Platform (VoltTrade)
-> **Capstone Project — Phase 1, Phase 2 & Phase 3: Authentication & Security**
+> **Capstone Project — Full Ecosystem: Authentication, Marketplace, Orders, Barter Swaps, Wishlist & Reviews**
 
-A full-stack, scalable platform designed to securely buy, sell, and exchange second-hand electronic devices. The system promotes affordable technology access while reducing global electronic waste through circular recommerce.
+A full-stack, scalable recommerce platform designed to securely buy, sell, and exchange second-hand electronic devices. The system promotes affordable technology access while reducing global electronic waste through circular tech recommerce.
 
 ---
 
@@ -9,17 +9,18 @@ A full-stack, scalable platform designed to securely buy, sell, and exchange sec
 
 The system consists of two decoupled, independently deployable tiers:
 
-- **Frontend**: React.js SPA powered by Vite 5 with CSS3 design tokens, glassmorphism, responsive product cards, search/filter bars, details modal, authentication modal (`AuthModal`), user profile dashboard (`Profile`), and centralized API services with JWT auto-injection (`api.js`, `authService.js`, `categoryService.js`, `productService.js`, `imageService.js`).
-- **Backend**: Java Spring Boot 3.3.x RESTful API structured in a clean, layered architecture (`controller`, `service`, `repository`, `entity`, `dto`, `config`, `security`) secured with Spring Security 6, JJWT, and BCrypt password hashing connected to Supabase PostgreSQL.
+- **Frontend**: React.js SPA powered by Vite 5 with CSS3 design tokens, dark glassmorphism, responsive product cards, search/filter bars, details modal with reviews, direct checkout modal (`CheckoutModal`), device trade proposal modal (`ExchangeModal`), user management center dashboard (`Dashboard`), authentication modal (`AuthModal`), user profile dashboard (`Profile`), and centralized API services with JWT auto-injection (`api.js`, `authService.js`, `orderService.js`, `exchangeService.js`, `favoriteService.js`, `reviewService.js`, `categoryService.js`, `productService.js`, `imageService.js`).
+- **Backend**: Java Spring Boot 3.3.x RESTful API structured in a clean, layered architecture (`controller`, `service`, `repository`, `entity`, `dto`, `config`, `security`) secured with Spring Security 6, JJWT, and BCrypt password hashing connected to Supabase PostgreSQL across all 8 relational tables.
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │              React.js (Vite) Frontend SPA              │
 │                 http://localhost:5173                  │
 ├────────────────────────────────────────────────────────┤
-│  Home • Marketplace • Categories • User Profile        │
+│  Home • Marketplace • Categories • User Dashboard      │
+│  My Purchases • Incoming Sales • Exchange Hub • Saved  │
+│  Direct Checkout Modal • Device Trade Barter Modal     │
 │  Auth Context (JWT Token in localStorage & Auto Header)│
-│  Sign In / Registration Modal with 1-Click Demo Logins │
 └───────────────────────────┬────────────────────────────┘
                             │ CORS (REST / JSON / Bearer JWT)
                             ▼
@@ -27,7 +28,9 @@ The system consists of two decoupled, independently deployable tiers:
 │               Spring Boot 3.3.x Backend                │
 │                 http://localhost:8080                  │
 ├────────────────────────────────────────────────────────┤
-│  Auth API (/api/auth) • Products API • Categories API   │
+│  Auth API (/api/auth) • Orders API (/api/orders)       │
+│  Exchanges API (/api/exchanges) • Favorites API        │
+│  Reviews API (/api/products/*/reviews) • Catalog API   │
 │  Spring Security Filter Chain • OncePerRequest Filter  │
 │  BCrypt Password Encoder • JJWT Token Generator/Parser │
 │  JPA Entities: 8 Relational Models (User, Product...)  │
@@ -36,7 +39,8 @@ The system consists of two decoupled, independently deployable tiers:
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │                Supabase PostgreSQL DB                  │
-│        (users, products, categories, orders...)        │
+│  (users, products, categories, orders, exchanges,      │
+│   favorites, reviews, product_images)                  │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -49,9 +53,8 @@ The system consists of two decoupled, independently deployable tiers:
 - **BCrypt Password Hashing**: Passwords stored using one-way adaptive hashing.
 - **Zero Password Exposure**: User responses utilize `UserResponseDTO` which never serializes password hashes.
 - **Role-Based Access Control (RBAC)**:
-  - `ROLE_USER`: Standard customer privileges (Browse, register, login, view/edit profile, list devices, negotiate trades).
-  - `ROLE_ADMIN`: Platform administrator (Full administrative access, category moderation, user auditing).
-- **Protected Endpoints**: Unauthenticated requests to protected endpoints return `401 Unauthorized` with structured JSON error messages.
+  - `ROLE_USER`: Standard customer privileges (Browse, register, login, view/edit profile, list devices, purchase, propose barter trades, add reviews, save to wishlist).
+  - `ROLE_ADMIN`: Platform administrator (Full administrative access, category moderation, user auditing, order overrides).
 
 ### Test Credentials
 | Account Type | Email | Password | Role |
@@ -61,7 +64,7 @@ The system consists of two decoupled, independently deployable tiers:
 
 ---
 
-## 🗄️ Relational Database Schema (8 Tables)
+## 🗄️ Relational Database Schema (All 8 Tables Active)
 
 The complete SQL schema is located in [`supabase_schema.sql`](file:///e:/electronic%20project/supabase_schema.sql).
 
@@ -71,9 +74,9 @@ The complete SQL schema is located in [`supabase_schema.sql`](file:///e:/electro
 | **`categories`** | `id (BIGSERIAL)` | — | `name (UNIQUE)`, `description` |
 | **`products`** | `id (BIGSERIAL)` | `seller_id -> users(id)` | `title`, `description`, `category`, `brand`, `model`, `condition`, `price`, `original_price`, `location`, `status`, `created_at`, `updated_at` |
 | **`product_images`** | `id (BIGSERIAL)` | `product_id -> products(id)` | `image_url` |
+| **`orders`** | `id (BIGSERIAL)` | `buyer_id -> users(id)`, `product_id -> products(id)` | `quantity`, `total_price`, `order_status (PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED)`, `created_at` |
+| **`exchange_requests`**| `id (BIGSERIAL)` | `requester_id -> users(id)`, `product_id -> products(id)`, `offered_product_id -> products(id)` | `message`, `status (PENDING, ACCEPTED, REJECTED, CANCELLED)`, `created_at` |
 | **`favorites`** | `id (BIGSERIAL)` | `user_id -> users(id)`, `product_id -> products(id)` | `created_at`, `UNIQUE(user_id, product_id)` |
-| **`orders`** | `id (BIGSERIAL)` | `buyer_id -> users(id)`, `product_id -> products(id)` | `quantity`, `total_price`, `order_status`, `created_at` |
-| **`exchange_requests`**| `id (BIGSERIAL)` | `requester_id -> users(id)`, `product_id -> products(id)`, `offered_product_id -> products(id)` | `message`, `status`, `created_at` |
 | **`reviews`** | `id (BIGSERIAL)` | `reviewer_id -> users(id)`, `product_id -> products(id)` | `rating (1-5)`, `comment`, `created_at` |
 
 ---
@@ -88,9 +91,10 @@ The complete SQL schema is located in [`supabase_schema.sql`](file:///e:/electro
 | **HTTP Client** | Axios | Configured with automatic `Authorization: Bearer <token>` interceptor |
 | **Backend** | Java 17+ / Spring Boot 3.3.4 | RESTful API Engine |
 | **Security** | Spring Security 6 + JJWT | Stateless JWT filter + BCrypt password hashing |
-| **Build Tool** | Apache Maven | Multi-module build management & unit test runner |
+| **Testing** | JUnit 5 + Mockito | 16 Automated unit tests covering all services |
+| **Build Tool** | Apache Maven | Multi-module build management |
 | **Database** | Supabase PostgreSQL | Cloud-native relational PostgreSQL engine |
-| **Version Control**| Git / GitHub | Code management |
+| **Version Control**| Git / GitHub | Continuous integration & version control |
 
 ---
 
@@ -133,44 +137,56 @@ npm run dev
 
 ---
 
-## 📡 REST API Reference
+## 📡 Complete REST API Reference
 
 ### 🔐 Authentication API (Phase 3)
 - **`POST /api/auth/register`** — Register new user account
-- **`POST /api/auth/login`** — Authenticate with email & password, receives JWT token
+- **`POST /api/auth/login`** — Authenticate with email & password, receive JWT token
 - **`GET /api/auth/me`** *(Protected)* — Get current user profile from JWT token
 - **`PUT /api/auth/profile`** *(Protected)* — Update user's name, phone, address, profile image
 - **`GET /api/auth/user/{id}`** — Retrieve public profile for a seller/user
 
-### Health Check (Phase 1)
-- **`GET /api/health`** — Returns `{"status": "Backend is running", "environment": "dev", "version": "1.0.0"}`
+### 📦 Orders & Purchases API (Phase 4)
+- **`POST /api/orders`** *(Protected)* — Place an order to purchase a device
+- **`GET /api/orders/my-orders`** *(Protected)* — List purchases made by authenticated buyer
+- **`GET /api/orders/seller-orders`** *(Protected)* — List sales orders received by seller
+- **`PUT /api/orders/{id}/status`** *(Protected)* — Update order fulfillment status (`CONFIRMED`, `SHIPPED`, `DELIVERED`, `CANCELLED`)
 
-### Categories API (Phase 2)
+### 🔄 Device Barter & Exchange API (Phase 4)
+- **`POST /api/exchanges`** *(Protected)* — Propose a device-for-device swap with negotiation note
+- **`GET /api/exchanges/received`** *(Protected)* — View trade proposals received for user's listings
+- **`GET /api/exchanges/sent`** *(Protected)* — View trade proposals submitted by user
+- **`PUT /api/exchanges/{id}/status`** *(Protected)* — Accept, reject, or cancel trade proposal
+
+### ❤️ Wishlist / Favorites API (Phase 4)
+- **`POST /api/favorites/{productId}`** *(Protected)* — Toggle product bookmark in user wishlist
+- **`GET /api/favorites`** *(Protected)* — Retrieve all favorited products
+- **`GET /api/favorites/check/{productId}`** — Check if specific product is favorited
+
+### ⭐ Ratings & Reviews API (Phase 4)
+- **`POST /api/products/{productId}/reviews`** *(Protected)* — Submit 1-5 star rating and comment
+- **`GET /api/products/{productId}/reviews`** — View all reviews for a product
+- **`GET /api/products/{productId}/rating-summary`** — Retrieve average star rating and review count
+
+### 🏷️ Categories & Products API (Phase 2)
 - **`GET /api/categories`** — Retrieve all categories
-- **`GET /api/categories/{id}`** — Retrieve single category by ID
-- **`POST /api/categories`** *(Protected)* — Create new category (`{"name": "...", "description": "..."}`)
-
-### Products API (Phase 2)
 - **`GET /api/products`** — Search and filter products (`?category=...&status=...&brand=...&condition=...&search=...`)
 - **`GET /api/products/{id}`** — Retrieve single product details with seller and image attachments
-- **`POST /api/products`** *(Protected)* — Create a new listing (`{"sellerId": 1, "title": "...", "price": 899, ...}`)
+- **`POST /api/products`** *(Protected)* — Create a new listing
 - **`PUT /api/products/{id}`** *(Protected)* — Update an existing listing
 - **`DELETE /api/products/{id}`** *(Protected)* — Delete a product
 
-### Product Images API (Phase 2)
-- **`GET /api/products/{productId}/images`** — List all images for a product
-- **`POST /api/products/{productId}/images`** *(Protected)* — Attach image to product
-- **`DELETE /api/images/{id}`** *(Protected)* — Delete an image by ID
+### 🩺 Health Check (Phase 1)
+- **`GET /api/health`** — Returns `{"status": "Backend is running", "environment": "dev", "version": "1.0.0"}`
 
 ---
 
 ## 🧪 Build & Test Verification
 
-### Backend Tests & Compilation:
+### Backend Automated Unit Tests (16 Tests):
 ```bash
 cd backend
-mvn test
-mvn clean compile
+mvn test "-Dtest=AuthServiceTest,OrderServiceTest,ExchangeRequestServiceTest,FavoriteServiceTest,ReviewServiceTest"
 ```
 
 ### Frontend Production Build:

@@ -1,0 +1,137 @@
+.exchange-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 2.25rem 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 35px rgba(56, 189, 248, 0.15);
+}
+
+.exchange-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.exchange-header h2 {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.exchange-header p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.swap-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 40px 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 500px) {
+  .swap-comparison-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .swap-divider-icon {
+    transform: rotate(90deg);
+  }
+}
+
+.swap-side-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.swap-side-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.swap-side-badge.offered {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.15);
+}
+
+.swap-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  margin-bottom: 0.4rem;
+}
+
+.swap-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.swap-price {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.swap-divider-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-offered-placeholder {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.exchange-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.exchange-success-state {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.exchange-success-state h3 {
+  font-size: 1.4rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.exchange-success-state p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}

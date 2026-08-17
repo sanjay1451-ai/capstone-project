@@ -8,9 +8,12 @@ import Footer from '../../components/Footer/Footer';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import ProductDetailsModal from '../../components/ProductDetailsModal/ProductDetailsModal';
 import CreateProductModal from '../../components/CreateProductModal/CreateProductModal';
+import CheckoutModal from '../../components/CheckoutModal/CheckoutModal';
+import ExchangeModal from '../../components/ExchangeModal/ExchangeModal';
 import AuthModal from '../../components/AuthModal/AuthModal';
 import ProductListing from '../ProductListing/ProductListing';
 import Categories from '../Categories/Categories';
+import Dashboard from '../Dashboard/Dashboard';
 import Profile from '../Profile/Profile';
 import { useAuth } from '../../context/AuthContext';
 import { useHealthCheck } from '../../hooks/useHealthCheck';
@@ -19,7 +22,7 @@ import { categoryService } from '../../services/categoryService';
 import './Home.css';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'health' | 'profile'
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'dashboard' | 'profile' | 'health'
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -29,10 +32,12 @@ export default function Home() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState('login');
+  const [checkoutProduct, setCheckoutProduct] = useState(null);
+  const [exchangeProduct, setExchangeProduct] = useState(null);
 
   const { isAuthenticated, user } = useAuth();
 
-  // Phase 1 Live Health Check Hook
+  // Live REST Health Check Hook
   const { status, data, latency, error, lastChecked, refetch } = useHealthCheck(true);
 
   // Load Categories
@@ -79,6 +84,16 @@ export default function Home() {
     }
   };
 
+  const handleOpenCheckout = (product) => {
+    setSelectedProduct(null);
+    setCheckoutProduct(product);
+  };
+
+  const handleOpenExchange = (product) => {
+    setSelectedProduct(null);
+    setExchangeProduct(product);
+  };
+
   return (
     <div className="home-page">
       {/* Navigation Header with Live Status & Auth State */}
@@ -96,7 +111,7 @@ export default function Home() {
           <>
             <Hero onExploreMarketplace={() => setActiveTab('products')} onListDevice={handleOpenCreateModal} />
 
-            {/* Featured Categories Carousel / Strip */}
+            {/* Featured Categories Strip */}
             {categories.length > 0 && (
               <section className="home-categories-section">
                 <div className="container">
@@ -132,8 +147,8 @@ export default function Home() {
               <div className="container">
                 <div className="section-header-compact">
                   <div>
-                    <span className="section-eyebrow">Database Catalog</span>
-                    <h2 className="section-heading-sm">Featured Verified Listings</h2>
+                    <span className="section-eyebrow">Verified Marketplace</span>
+                    <h2 className="section-heading-sm">Featured Circular Tech</h2>
                   </div>
                   <button className="view-all-link" onClick={() => { setSelectedCategory(''); setActiveTab('products'); }}>
                     <span>View All Listings ({featuredProducts.length}+)</span>
@@ -148,6 +163,7 @@ export default function Home() {
                         key={product.id}
                         product={product}
                         onSelect={setSelectedProduct}
+                        onOpenAuthModal={handleOpenAuthModal}
                       />
                     ))}
                   </div>
@@ -163,7 +179,7 @@ export default function Home() {
             {/* Platform Pillars */}
             <FeatureGrid />
 
-            {/* Phase 1 Live REST Health Check Widget */}
+            {/* Live REST Health Check Widget */}
             <HealthCheck
               status={status}
               data={data}
@@ -183,6 +199,7 @@ export default function Home() {
             onSelectCategory={setSelectedCategory}
             onSelectProduct={setSelectedProduct}
             onOpenCreateModal={handleOpenCreateModal}
+            onOpenAuthModal={handleOpenAuthModal}
           />
         )}
 
@@ -194,16 +211,29 @@ export default function Home() {
           />
         )}
 
-        {/* TAB 4: USER PROFILE & SETTINGS VIEW (PROTECTED) */}
-        {activeTab === 'profile' && (
-          <Profile
-            onOpenAuthModal={handleOpenAuthModal}
+        {/* TAB 4: USER DASHBOARD (PURCHASES, SALES, EXCHANGES, WISHLIST, PROFILE) */}
+        {activeTab === 'dashboard' && (
+          <Dashboard
+            initialTab="purchases"
+            onSelectProduct={setSelectedProduct}
             onOpenCreateModal={handleOpenCreateModal}
+            onOpenAuthModal={handleOpenAuthModal}
             onBackToHome={() => setActiveTab('home')}
           />
         )}
 
-        {/* TAB 5: API STATUS VIEW */}
+        {/* TAB 5: USER PROFILE DIRECT TAB */}
+        {activeTab === 'profile' && (
+          <Dashboard
+            initialTab="profile"
+            onSelectProduct={setSelectedProduct}
+            onOpenCreateModal={handleOpenCreateModal}
+            onOpenAuthModal={handleOpenAuthModal}
+            onBackToHome={() => setActiveTab('home')}
+          />
+        )}
+
+        {/* TAB 6: API STATUS VIEW */}
         {activeTab === 'health' && (
           <div style={{ paddingTop: '2rem' }}>
             <HealthCheck
@@ -218,11 +248,36 @@ export default function Home() {
         )}
       </main>
 
-      {/* Product Details Modal */}
+      {/* Product Details Modal with Reviews, Checkout & Exchange */}
       {selectedProduct && (
         <ProductDetailsModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
+          onOpenCheckout={handleOpenCheckout}
+          onOpenExchange={handleOpenExchange}
+          onOpenAuthModal={handleOpenAuthModal}
+        />
+      )}
+
+      {/* Checkout Modal */}
+      {checkoutProduct && (
+        <CheckoutModal
+          product={checkoutProduct}
+          onClose={() => setCheckoutProduct(null)}
+          onOrderPlaced={() => {
+            setActiveTab('dashboard');
+          }}
+        />
+      )}
+
+      {/* Exchange Proposal Modal */}
+      {exchangeProduct && (
+        <ExchangeModal
+          targetProduct={exchangeProduct}
+          onClose={() => setExchangeProduct(null)}
+          onExchangeProposed={() => {
+            setActiveTab('dashboard');
+          }}
         />
       )}
 
@@ -241,7 +296,6 @@ export default function Home() {
         initialTab={authModalTab}
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={() => {
-          // If the user was on the profile tab or wants to view profile
           console.log('Authentication successful!');
         }}
       />

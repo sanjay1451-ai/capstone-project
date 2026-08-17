@@ -5,14 +5,14 @@
   cursor: pointer;
   border-radius: var(--radius-md);
   transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-  background: var(--grad-card);
-  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
 }
 
 .product-card:hover {
   transform: translateY(-5px);
-  border-color: var(--border-hover);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.15);
 }
 
 .product-img-wrapper {
@@ -39,7 +39,7 @@
   top: 10px;
   left: 10px;
   padding: 0.25rem 0.65rem;
-  border-radius: var(--radius-full);
+  border-radius: 9999px;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -70,7 +70,7 @@
 .discount-tag {
   position: absolute;
   top: 10px;
-  right: 10px;
+  right: 44px;
   background: rgba(239, 68, 68, 0.9);
   color: #ffffff;
   padding: 0.25rem 0.55rem;
@@ -78,6 +78,31 @@
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.02em;
+}
+
+.card-heart-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-all);
+  z-index: 5;
+}
+
+.card-heart-btn:hover,
+.card-heart-btn.active {
+  transform: scale(1.15);
+  color: #ef4444;
 }
 
 .product-body {
@@ -96,7 +121,7 @@
 
 .product-category {
   font-size: 0.75rem;
-  color: var(--emerald-400);
+  color: var(--accent);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -133,8 +158,8 @@
 .spec-badge {
   font-size: 0.72rem;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
 }
@@ -145,7 +170,7 @@
   align-items: center;
   justify-content: space-between;
   padding-top: 0.85rem;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-color);
 }
 
 .price-block {
@@ -155,10 +180,9 @@
 }
 
 .current-price {
-  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 800;
-  color: #ffffff;
+  color: #34d399;
 }
 
 .original-price {
@@ -173,15 +197,15 @@
   gap: 0.35rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--emerald-400);
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: var(--accent);
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   padding: 0.35rem 0.75rem;
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
 }
 
 .view-details-btn:hover {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(56, 189, 248, 0.2);
   color: #ffffff;
 }

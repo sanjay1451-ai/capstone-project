@@ -10,7 +10,8 @@ export default function ProductListing({
   selectedCategory,
   onSelectCategory,
   onSelectProduct,
-  onOpenCreateModal
+  onOpenCreateModal,
+  onOpenAuthModal
 }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -146,6 +147,7 @@ export default function ProductListing({
               key={product.id}
               product={product}
               onSelect={onSelectProduct}
+              onOpenAuthModal={onOpenAuthModal}
             />
           ))}
         </div>

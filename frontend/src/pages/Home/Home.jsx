@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, ShoppingBag, Layers, Activity, Plus, User, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Sparkles, ShoppingBag, Layers, Activity, Plus, User, ShieldCheck, Tag } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import Hero from '../../components/Hero/Hero';
 import HealthCheck from '../../components/HealthCheck/HealthCheck';
@@ -15,6 +15,7 @@ import ProductListing from '../ProductListing/ProductListing';
 import Categories from '../Categories/Categories';
 import Dashboard from '../Dashboard/Dashboard';
 import Profile from '../Profile/Profile';
+import Sell from '../Sell/Sell';
 import { useAuth } from '../../context/AuthContext';
 import { useHealthCheck } from '../../hooks/useHealthCheck';
 import { productService } from '../../services/productService';
@@ -22,7 +23,7 @@ import { categoryService } from '../../services/categoryService';
 import './Home.css';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'dashboard' | 'profile' | 'health'
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'sell' | 'dashboard' | 'profile' | 'health'
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -30,6 +31,7 @@ export default function Home() {
   
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState('login');
   const [checkoutProduct, setCheckoutProduct] = useState(null);
@@ -66,7 +68,7 @@ export default function Home() {
 
   const handleProductCreated = () => {
     loadFeatured();
-    if (activeTab !== 'products') {
+    if (activeTab !== 'products' && activeTab !== 'dashboard') {
       setActiveTab('products');
     }
   };
@@ -76,10 +78,11 @@ export default function Home() {
     setIsAuthModalOpen(true);
   };
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = (productToEdit = null) => {
     if (!isAuthenticated) {
       handleOpenAuthModal('login');
     } else {
+      setEditingProduct(productToEdit && productToEdit.id ? productToEdit : null);
       setIsCreateModalOpen(true);
     }
   };
@@ -100,7 +103,7 @@ export default function Home() {
       <Navbar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
-        onOpenCreateModal={handleOpenCreateModal}
+        onOpenCreateModal={() => handleOpenCreateModal(null)}
         onOpenAuthModal={handleOpenAuthModal}
         backendStatus={status}
       />
@@ -109,7 +112,7 @@ export default function Home() {
         {/* TAB 1: HOME VIEW */}
         {activeTab === 'home' && (
           <>
-            <Hero onExploreMarketplace={() => setActiveTab('products')} onListDevice={handleOpenCreateModal} />
+            <Hero onExploreMarketplace={() => setActiveTab('products')} onListDevice={() => handleOpenCreateModal(null)} />
 
             {/* Featured Categories Strip */}
             {categories.length > 0 && (
@@ -198,7 +201,7 @@ export default function Home() {
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
             onSelectProduct={setSelectedProduct}
-            onOpenCreateModal={handleOpenCreateModal}
+            onOpenCreateModal={() => handleOpenCreateModal(null)}
             onOpenAuthModal={handleOpenAuthModal}
           />
         )}
@@ -211,29 +214,43 @@ export default function Home() {
           />
         )}
 
-        {/* TAB 4: USER DASHBOARD (PURCHASES, SALES, EXCHANGES, WISHLIST, PROFILE) */}
-        {activeTab === 'dashboard' && (
-          <Dashboard
-            initialTab="purchases"
-            onSelectProduct={setSelectedProduct}
-            onOpenCreateModal={handleOpenCreateModal}
+        {/* TAB 4: SELL ELECTRONICS VIEW */}
+        {activeTab === 'sell' && (
+          <Sell
+            onListingCreated={() => {
+              loadFeatured();
+              setActiveTab('dashboard');
+            }}
+            onBackToHome={() => setActiveTab('products')}
             onOpenAuthModal={handleOpenAuthModal}
-            onBackToHome={() => setActiveTab('home')}
           />
         )}
 
-        {/* TAB 5: USER PROFILE DIRECT TAB */}
+        {/* TAB 5: USER DASHBOARD (LISTINGS, PURCHASES, SALES, EXCHANGES, WISHLIST, PROFILE) */}
+        {activeTab === 'dashboard' && (
+          <Dashboard
+            initialTab="listings"
+            onSelectProduct={setSelectedProduct}
+            onOpenCreateModal={() => handleOpenCreateModal(null)}
+            onEditProduct={(product) => handleOpenCreateModal(product)}
+            onOpenAuthModal={handleOpenAuthModal}
+            onBackToHome={() => setActiveTab('products')}
+          />
+        )}
+
+        {/* TAB 6: USER PROFILE DIRECT TAB */}
         {activeTab === 'profile' && (
           <Dashboard
             initialTab="profile"
             onSelectProduct={setSelectedProduct}
-            onOpenCreateModal={handleOpenCreateModal}
+            onOpenCreateModal={() => handleOpenCreateModal(null)}
+            onEditProduct={(product) => handleOpenCreateModal(product)}
             onOpenAuthModal={handleOpenAuthModal}
             onBackToHome={() => setActiveTab('home')}
           />
         )}
 
-        {/* TAB 6: API STATUS VIEW */}
+        {/* TAB 7: API STATUS VIEW */}
         {activeTab === 'health' && (
           <div style={{ paddingTop: '2rem' }}>
             <HealthCheck
@@ -281,12 +298,16 @@ export default function Home() {
         />
       )}
 
-      {/* Create Listing Modal */}
+      {/* Create / Edit Listing Modal */}
       {isCreateModalOpen && (
         <CreateProductModal
           categories={categories}
-          onClose={() => setIsCreateModalOpen(false)}
-          onCreated={handleProductCreated}
+          product={editingProduct}
+          onClose={() => {
+            setIsCreateModalOpen(false);
+            setEditingProduct(null);
+          }}
+          onSaved={handleProductCreated}
         />
       )}
 

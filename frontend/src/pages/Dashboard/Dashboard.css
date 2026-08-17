@@ -131,6 +131,227 @@
   max-width: 400px;
 }
 
+/* ================= MY LISTINGS ================= */
+.my-listings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.my-listing-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  transition: all var(--transition-normal);
+}
+
+.my-listing-card:hover {
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.15);
+  transform: translateY(-2px);
+}
+
+.my-listing-img-box {
+  position: relative;
+  height: 180px;
+  width: 100%;
+  background: #090d16;
+  overflow: hidden;
+}
+
+.my-listing-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.my-listing-card:hover .my-listing-img-box img {
+  transform: scale(1.05);
+}
+
+.listing-condition-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  color: var(--emerald-300);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+}
+
+.my-listing-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.6rem;
+}
+
+.my-listing-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.listing-cat {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.my-listing-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.my-listing-title:hover {
+  color: var(--emerald-400);
+}
+
+.my-listing-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.my-listing-price {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.my-listing-orig {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.my-listing-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.my-listing-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.85rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.my-listing-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.my-listing-action-btns {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.btn-listing-action {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-listing-action.view {
+  color: var(--accent);
+}
+
+.btn-listing-action.view:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--accent);
+}
+
+.btn-listing-action.edit {
+  color: var(--emerald-400);
+}
+
+.btn-listing-action.edit:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: var(--emerald-400);
+}
+
+.btn-listing-action.delete {
+  color: #f87171;
+}
+
+.btn-listing-action.delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+}
+
+/* Delete Confirmation Modal */
+.delete-confirm-modal {
+  max-width: 440px;
+  text-align: center;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.delete-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
 /* Orders List */
 .orders-list {
   display: flex;

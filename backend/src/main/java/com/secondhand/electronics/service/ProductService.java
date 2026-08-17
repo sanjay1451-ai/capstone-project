@@ -9,14 +9,14 @@ import com.secondhand.electronics.repository.ProductImageRepository;
 import com.secondhand.electronics.repository.ProductRepository;
 import com.secondhand.electronics.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -25,8 +25,9 @@ public class ProductService {
     private final ProductImageRepository productImageRepository;
     private final UserRepository userRepository;
 
-    private final ConcurrentHashMap<Long, ProductResponseDTO> fallbackCache = new ConcurrentHashMap<>();
-    private final AtomicLong fallbackIdGen = new AtomicLong(100);
+    // Resilient fallback storage for dev / offline demo mode
+    private final Map<Long, ProductResponseDTO> fallbackCache = new ConcurrentHashMap<>();
+    private final AtomicLong fallbackIdGen = new AtomicLong(10);
 
     public ProductService(
             ProductRepository productRepository,
@@ -40,76 +41,61 @@ public class ProductService {
     }
 
     private void initFallbackCatalog() {
-        List<ProductResponseDTO> demoItems = List.of(
-            createFallbackDTO(1L, "MacBook Pro 14\" M3 Pro (18GB / 512GB)",
-                "Space Black, 100% battery health, original 70W MagSafe charger included. Zero scratches, refurbished and diagnostic verified.",
-                "Laptops & Computers", "Apple", "MacBook Pro 14 M3", "LIKE_NEW",
-                new BigDecimal("1499.00"), new BigDecimal("1999.00"), "San Francisco, CA",
+        fallbackCache.put(1L, createFallbackDTO(
+                1L, 1L, "iPhone 14 Pro Max 256GB - Space Black",
+                "Like new condition, 98% battery health. Comes with original Apple packaging, unused braided USB-C to Lightning cable, and an official MagSafe leather case. Fully unlocked for all GSM/CDMA carriers worldwide.",
+                "Smartphones", "Apple", "A2651 (Pro Max)", "LIKE_NEW",
+                new BigDecimal("899.00"), new BigDecimal("1199.00"), "San Francisco, CA",
                 List.of(
-                    "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800",
-                    "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=800"
-                )),
+                        "https://images.unsplash.com/photo-1678652197831-2d180705cd2c?w=800",
+                        "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800",
+                        "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800"
+                )
+        ));
 
-            createFallbackDTO(2L, "iPhone 15 Pro Max 256GB - Natural Titanium",
-                "Factory unlocked, pristine OLED display with Ceramic Shield, original box, and AppleCare+ warranty remaining for 6 months.",
-                "Smartphones", "Apple", "iPhone 15 Pro Max", "EXCELLENT",
-                new BigDecimal("899.00"), new BigDecimal("1199.00"), "Seattle, WA",
+        fallbackCache.put(2L, createFallbackDTO(
+                2L, 2L, "MacBook Pro 16-inch M2 Max (32GB, 1TB SSD)",
+                "Space Gray workstation monster. Zero physical scratches, pristine Liquid Retina XDR display with ProMotion 120Hz. Only 24 battery cycles. Includes 140W fast charger.",
+                "Laptops", "Apple", "MacBookPro18,2", "EXCELLENT",
+                new BigDecimal("2150.00"), new BigDecimal("3499.00"), "Austin, TX",
                 List.of(
-                    "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800",
-                    "https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=800"
-                )),
+                        "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800",
+                        "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=800"
+                )
+        ));
 
-            createFallbackDTO(3L, "Sony WH-1000XM5 Wireless ANC Headphones",
-                "Industry-leading active noise canceling headphones in Silver. Includes hard carrying case, 3.5mm cable, and USB-C fast charger.",
-                "Audio & Sound", "Sony", "WH-1000XM5", "LIKE_NEW",
-                new BigDecimal("269.00"), new BigDecimal("399.00"), "Austin, TX",
+        fallbackCache.put(3L, createFallbackDTO(
+                3L, 3L, "Sony WH-1000XM5 Wireless ANC Headphones",
+                "Industry-leading active noise canceling headphones in Silver. Clean earcups sanitized with UV, 30-hour battery life intact. Includes hard carrying case, 3.5mm audio cable and airplane adapter.",
+                "Audio", "Sony", "WH-1000XM5/S", "LIKE_NEW",
+                new BigDecimal("269.00"), new BigDecimal("399.99"), "Seattle, WA",
                 List.of(
-                    "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800",
-                    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800"
-                )),
+                        "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800",
+                        "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800"
+                )
+        ));
 
-            createFallbackDTO(4L, "Sony PlayStation 5 Digital Edition (Slim)",
-                "Includes 1TB SSD, dual DualSense wireless controllers, HDMI 2.1 cable, and vertical stand. Tested and thermal-cleaned.",
-                "Gaming & Consoles", "Sony", "PlayStation 5 Slim", "EXCELLENT",
-                new BigDecimal("369.00"), new BigDecimal("449.00"), "Chicago, IL",
+        fallbackCache.put(4L, createFallbackDTO(
+                4L, 1L, "Sony PlayStation 5 Disc Edition + DualSense Controller",
+                "Latest CFI-1200 model revision with improved thermals. Cleaned and factory reset. Includes 1TB ultra-high speed NVMe SSD, HDMI 2.1 cable, and God of War Ragnarok disc.",
+                "Gaming", "Sony", "CFI-1215A", "GOOD",
+                new BigDecimal("420.00"), new BigDecimal("499.99"), "New York, NY",
                 List.of(
-                    "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=800",
-                    "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800"
-                )),
-
-            createFallbackDTO(5L, "iPad Pro 11\" M2 (Wi-Fi, 128GB) Space Gray",
-                "Liquid Retina display with ProMotion 120Hz. Bundled with 2nd Gen Apple Pencil and Smart Folio magnetic case.",
-                "Tablets & Readers", "Apple", "iPad Pro 11 M2", "GOOD",
-                new BigDecimal("579.00"), new BigDecimal("799.00"), "Denver, CO",
-                List.of(
-                    "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=800",
-                    "https://images.unsplash.com/photo-1585790050230-5dd28404ccb9?w=800"
-                )),
-
-            createFallbackDTO(6L, "Apple Watch Ultra 2 (49mm Titanium)",
-                "Rugged GPS + Cellular smartwatch with Orange Ocean Band. Ideal for endurance sports and diving. Battery at 98%.",
-                "Wearables & Smartwatches", "Apple", "Watch Ultra 2", "LIKE_NEW",
-                new BigDecimal("589.00"), new BigDecimal("799.00"), "Boston, MA",
-                List.of(
-                    "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=800",
-                    "https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?w=800"
-                ))
-        );
-
-        for (ProductResponseDTO dto : demoItems) {
-            fallbackCache.put(dto.getId(), dto);
-        }
+                        "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=800",
+                        "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800"
+                )
+        ));
     }
 
     private ProductResponseDTO createFallbackDTO(
-            Long id, String title, String desc, String cat, String brand,
+            Long id, Long sellerId, String title, String desc, String cat, String brand,
             String model, String cond, BigDecimal price, BigDecimal origPrice,
             String location, List<String> images) {
         ProductResponseDTO dto = new ProductResponseDTO();
         dto.setId(id);
-        dto.setSellerId(1L);
-        dto.setSellerName("EcoTrade Certified");
-        dto.setSellerEmail("verified@ecotrade.com");
+        dto.setSellerId(sellerId != null ? sellerId : 1L);
+        dto.setSellerName("EcoTrade Verified Seller");
+        dto.setSellerEmail("verified@volttrade.com");
         dto.setSellerPhone("+1-555-0188");
         dto.setTitle(title);
         dto.setDescription(desc);
@@ -123,8 +109,8 @@ public class ProductService {
         dto.setStatus("AVAILABLE");
         dto.setCreatedAt(LocalDateTime.now().minusDays(2));
         dto.setUpdatedAt(LocalDateTime.now());
-        dto.setImageUrls(images);
-        dto.setPrimaryImage(images.isEmpty() ? null : images.get(0));
+        dto.setImageUrls(images != null ? images : new ArrayList<>());
+        dto.setPrimaryImage(images != null && !images.isEmpty() ? images.get(0) : null);
         dto.calculateDiscount();
         return dto;
     }
@@ -145,23 +131,23 @@ public class ProductService {
 
             List<Product> products = productRepository.searchProducts(catParam, statusParam, brandParam, condParam, searchParam);
             if (!products.isEmpty()) {
-                return products.stream().map(this::mapToResponseDTO).toList();
+                return products.stream().map(this::mapToResponseDTO).collect(Collectors.toList());
             }
         } catch (Exception ignored) {
-            // DB temporarily unreachable; filter fallback cache
+            // DB unreachable; use fallback cache
         }
 
-        // Apply in-memory filtering on fallback cache
+        // Apply filters to in-memory fallback cache
         return fallbackCache.values().stream()
-                .filter(p -> category == null || category.isBlank() || p.getCategory().equalsIgnoreCase(category.trim()))
-                .filter(p -> status == null || status.isBlank() || p.getStatus().equalsIgnoreCase(status.trim()))
-                .filter(p -> brand == null || brand.isBlank() || (p.getBrand() != null && p.getBrand().equalsIgnoreCase(brand.trim())))
-                .filter(p -> condition == null || condition.isBlank() || p.getCondition().equalsIgnoreCase(condition.trim()))
+                .filter(p -> category == null || category.isBlank() || p.getCategory().equalsIgnoreCase(category))
+                .filter(p -> status == null || status.isBlank() || (p.getStatus() != null && p.getStatus().equalsIgnoreCase(status)))
+                .filter(p -> brand == null || brand.isBlank() || (p.getBrand() != null && p.getBrand().equalsIgnoreCase(brand)))
+                .filter(p -> condition == null || condition.isBlank() || (p.getCondition() != null && p.getCondition().equalsIgnoreCase(condition)))
                 .filter(p -> search == null || search.isBlank() ||
-                        p.getTitle().toLowerCase().contains(search.toLowerCase().trim()) ||
-                        (p.getDescription() != null && p.getDescription().toLowerCase().contains(search.toLowerCase().trim())))
-                .sorted((a, b) -> b.getId().compareTo(a.getId()))
-                .toList();
+                        (p.getTitle() != null && p.getTitle().toLowerCase().contains(search.toLowerCase())) ||
+                        (p.getDescription() != null && p.getDescription().toLowerCase().contains(search.toLowerCase()))
+                )
+                .collect(Collectors.toList());
     }
 
     public Optional<ProductResponseDTO> getProductById(Long id) {
@@ -176,20 +162,62 @@ public class ProductService {
         return Optional.ofNullable(fallbackCache.get(id));
     }
 
+    public List<ProductResponseDTO> getMyListings(String userEmail) {
+        Long sellerId = getUserIdByEmail(userEmail);
+
+        try {
+            List<Product> list = productRepository.findBySellerId(sellerId);
+            if (!list.isEmpty()) {
+                return list.stream().map(this::mapToResponseDTO).collect(Collectors.toList());
+            }
+        } catch (Exception ignored) {}
+
+        return fallbackCache.values().stream()
+                .filter(p -> p.getSellerId() != null && p.getSellerId().equals(sellerId))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     public ProductResponseDTO createProduct(ProductDTO dto) {
+        return createProduct(dto, null);
+    }
+
+    @Transactional
+    public ProductResponseDTO createProduct(ProductDTO dto, String userEmail) {
+        validateProductInput(dto);
+
+        Long sellerId = 1L;
+        String sellerName = "VoltTrade Seller";
+        String sellerEmail = "seller@volttrade.com";
+
+        if (userEmail != null && !userEmail.isBlank()) {
+            try {
+                Optional<User> u = userRepository.findByEmail(userEmail);
+                if (u.isPresent()) {
+                    sellerId = u.get().getId();
+                    sellerName = u.get().getName();
+                    sellerEmail = u.get().getEmail();
+                }
+            } catch (Exception ignored) {}
+        } else if (dto.getSellerId() != null) {
+            sellerId = dto.getSellerId();
+        }
+
         try {
             Product product = new Product();
-            product.setSellerId(dto.getSellerId() != null ? dto.getSellerId() : 1L);
-            product.setTitle(dto.getTitle());
-            product.setDescription(dto.getDescription());
-            product.setCategory(dto.getCategory());
-            product.setBrand(dto.getBrand());
-            product.setModel(dto.getModel());
-            product.setCondition(dto.getCondition());
+            product.setSellerId(sellerId);
+            product.setTitle(dto.getTitle().trim());
+            product.setDescription(dto.getDescription() != null ? dto.getDescription().trim() : "");
+            product.setCategory(dto.getCategory().trim());
+            product.setBrand(dto.getBrand() != null ? dto.getBrand().trim() : "");
+            product.setModel(dto.getModel() != null ? dto.getModel().trim() : "");
+            product.setCondition(dto.getCondition().trim().toUpperCase());
             product.setPrice(dto.getPrice());
             product.setOriginalPrice(dto.getOriginalPrice());
-            product.setLocation(dto.getLocation());
-            product.setStatus(dto.getStatus() != null ? dto.getStatus() : "AVAILABLE");
+            product.setLocation(dto.getLocation() != null ? dto.getLocation().trim() : "Online / Global");
+            product.setStatus(dto.getStatus() != null ? dto.getStatus().trim().toUpperCase() : "AVAILABLE");
+            product.setCreatedAt(LocalDateTime.now());
+            product.setUpdatedAt(LocalDateTime.now());
 
             Product savedProduct = productRepository.save(product);
 
@@ -208,37 +236,65 @@ public class ProductService {
         } catch (Exception ignored) {
             Long newId = fallbackIdGen.incrementAndGet();
             ProductResponseDTO cached = createFallbackDTO(
-                    newId, dto.getTitle(), dto.getDescription(), dto.getCategory(),
+                    newId, sellerId, dto.getTitle(), dto.getDescription(), dto.getCategory(),
                     dto.getBrand(), dto.getModel(), dto.getCondition(), dto.getPrice(),
                     dto.getOriginalPrice(), dto.getLocation(),
-                    dto.getImageUrls() != null ? dto.getImageUrls() : List.of("https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800")
+                    dto.getImageUrls() != null && !dto.getImageUrls().isEmpty() ? dto.getImageUrls() : List.of("https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800")
             );
-            if (dto.getSellerId() != null) {
-                cached.setSellerId(dto.getSellerId());
-            }
+            cached.setSellerName(sellerName);
+            cached.setSellerEmail(sellerEmail);
             fallbackCache.put(newId, cached);
             return cached;
         }
     }
 
+    @Transactional
     public Optional<ProductResponseDTO> updateProduct(Long id, ProductDTO dto) {
+        return updateProduct(id, dto, null);
+    }
+
+    @Transactional
+    public Optional<ProductResponseDTO> updateProduct(Long id, ProductDTO dto, String userEmail) {
+        validateProductInput(dto);
+
+        // Ownership validation
+        if (userEmail != null) {
+            validateSellerOwnership(id, userEmail);
+        }
+
         try {
             Optional<Product> opt = productRepository.findById(id);
             if (opt.isPresent()) {
                 Product product = opt.get();
-                product.setTitle(dto.getTitle());
-                product.setDescription(dto.getDescription());
-                product.setCategory(dto.getCategory());
-                product.setBrand(dto.getBrand());
-                product.setModel(dto.getModel());
-                product.setCondition(dto.getCondition());
+                product.setTitle(dto.getTitle().trim());
+                product.setDescription(dto.getDescription() != null ? dto.getDescription().trim() : "");
+                product.setCategory(dto.getCategory().trim());
+                product.setBrand(dto.getBrand() != null ? dto.getBrand().trim() : "");
+                product.setModel(dto.getModel() != null ? dto.getModel().trim() : "");
+                product.setCondition(dto.getCondition().trim().toUpperCase());
                 product.setPrice(dto.getPrice());
                 product.setOriginalPrice(dto.getOriginalPrice());
-                product.setLocation(dto.getLocation());
+                product.setLocation(dto.getLocation() != null ? dto.getLocation().trim() : "Online / Global");
                 if (dto.getStatus() != null) {
-                    product.setStatus(dto.getStatus());
+                    product.setStatus(dto.getStatus().trim().toUpperCase());
                 }
+                product.setUpdatedAt(LocalDateTime.now());
+
                 Product updated = productRepository.save(product);
+
+                // Update images if provided
+                if (dto.getImageUrls() != null) {
+                    try {
+                        productImageRepository.deleteByProductId(id);
+                        for (String url : dto.getImageUrls()) {
+                            if (url != null && !url.isBlank()) {
+                                ProductImage img = new ProductImage(updated, url.trim());
+                                productImageRepository.save(img);
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+
                 ProductResponseDTO res = mapToResponseDTO(updated);
                 fallbackCache.put(id, res);
                 return Optional.of(res);
@@ -259,13 +315,28 @@ public class ProductService {
             cached.setOriginalPrice(dto.getOriginalPrice());
             cached.setLocation(dto.getLocation());
             if (dto.getStatus() != null) cached.setStatus(dto.getStatus());
+            if (dto.getImageUrls() != null && !dto.getImageUrls().isEmpty()) {
+                cached.setImageUrls(dto.getImageUrls());
+                cached.setPrimaryImage(dto.getImageUrls().get(0));
+            }
+            cached.setUpdatedAt(LocalDateTime.now());
             cached.calculateDiscount();
             return Optional.of(cached);
         }
         return Optional.empty();
     }
 
+    @Transactional
     public boolean deleteProduct(Long id) {
+        return deleteProduct(id, null);
+    }
+
+    @Transactional
+    public boolean deleteProduct(Long id, String userEmail) {
+        if (userEmail != null) {
+            validateSellerOwnership(id, userEmail);
+        }
+
         boolean deleted = false;
         try {
             if (productRepository.existsById(id)) {
@@ -276,51 +347,113 @@ public class ProductService {
         } catch (Exception ignored) {
             // DB unreachable
         }
-        if (fallbackCache.remove(id) != null) {
+
+        if (fallbackCache.containsKey(id)) {
+            fallbackCache.remove(id);
             deleted = true;
         }
+
         return deleted;
     }
 
-    public ProductResponseDTO mapToResponseDTO(Product product) {
-        ProductResponseDTO dto = new ProductResponseDTO();
-        dto.setId(product.getId());
-        dto.setSellerId(product.getSellerId());
-        dto.setTitle(product.getTitle());
-        dto.setDescription(product.getDescription());
-        dto.setCategory(product.getCategory());
-        dto.setBrand(product.getBrand());
-        dto.setModel(product.getModel());
-        dto.setCondition(product.getCondition());
-        dto.setPrice(product.getPrice());
-        dto.setOriginalPrice(product.getOriginalPrice());
-        dto.setLocation(product.getLocation());
-        dto.setStatus(product.getStatus());
-        dto.setCreatedAt(product.getCreatedAt());
-        dto.setUpdatedAt(product.getUpdatedAt());
-        dto.calculateDiscount();
+    private void validateProductInput(ProductDTO dto) {
+        if (dto.getTitle() == null || dto.getTitle().trim().isBlank()) {
+            throw new IllegalArgumentException("Product title cannot be empty.");
+        }
+        if (dto.getCategory() == null || dto.getCategory().trim().isBlank()) {
+            throw new IllegalArgumentException("Category is required.");
+        }
+        if (dto.getPrice() == null || dto.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Price must be greater than $0.00");
+        }
+        if (dto.getCondition() == null || dto.getCondition().trim().isBlank()) {
+            throw new IllegalArgumentException("Condition is required.");
+        }
+        String cond = dto.getCondition().trim().toUpperCase();
+        Set<String> validConditions = Set.of("LIKE_NEW", "EXCELLENT", "GOOD", "FAIR", "USED");
+        if (!validConditions.contains(cond)) {
+            throw new IllegalArgumentException("Condition must be one of: Like New, Excellent, Good, Fair, Used");
+        }
+    }
 
+    private void validateSellerOwnership(Long productId, String userEmail) {
+        User user = null;
         try {
-            userRepository.findById(product.getSellerId()).ifPresent(user -> {
-                dto.setSellerName(user.getName());
-                dto.setSellerEmail(user.getEmail());
-                dto.setSellerPhone(user.getPhone());
-            });
+            user = userRepository.findByEmail(userEmail).orElse(null);
         } catch (Exception ignored) {}
 
+        if (user == null) {
+            return; // Dev bypass
+        }
+
+        if ("ROLE_ADMIN".equals(user.getRole())) {
+            return; // Admins have full access
+        }
+
+        ProductResponseDTO product = getProductById(productId).orElse(null);
+        if (product == null) {
+            throw new IllegalArgumentException("Product not found with ID: " + productId);
+        }
+
+        if (product.getSellerId() != null && !product.getSellerId().equals(user.getId())) {
+            throw new SecurityException("You do not have permission to modify or delete this listing.");
+        }
+    }
+
+    private Long getUserIdByEmail(String email) {
+        if (email == null) return 1L;
         try {
-            List<ProductImage> images = productImageRepository.findByProductId(product.getId());
-            List<String> urls = images.stream().map(ProductImage::getImageUrl).toList();
+            Optional<User> u = userRepository.findByEmail(email);
+            if (u.isPresent()) return u.get().getId();
+        } catch (Exception ignored) {}
+        return 1L;
+    }
+
+    private ProductResponseDTO mapToResponseDTO(Product p) {
+        ProductResponseDTO dto = new ProductResponseDTO();
+        dto.setId(p.getId());
+        dto.setSellerId(p.getSellerId());
+        dto.setTitle(p.getTitle());
+        dto.setDescription(p.getDescription());
+        dto.setCategory(p.getCategory());
+        dto.setBrand(p.getBrand());
+        dto.setModel(p.getModel());
+        dto.setCondition(p.getCondition());
+        dto.setPrice(p.getPrice());
+        dto.setOriginalPrice(p.getOriginalPrice());
+        dto.setLocation(p.getLocation());
+        dto.setStatus(p.getStatus());
+        dto.setCreatedAt(p.getCreatedAt());
+        dto.setUpdatedAt(p.getUpdatedAt());
+
+        // Fetch seller name from UserRepository if possible
+        try {
+            if (p.getSellerId() != null) {
+                userRepository.findById(p.getSellerId()).ifPresent(user -> {
+                    dto.setSellerName(user.getName());
+                    dto.setSellerEmail(user.getEmail());
+                    dto.setSellerPhone(user.getPhone());
+                });
+            }
+        } catch (Exception ignored) {}
+
+        if (dto.getSellerName() == null) {
+            dto.setSellerName("EcoTrade Member");
+        }
+
+        // Fetch images
+        try {
+            List<ProductImage> imgs = productImageRepository.findByProductId(p.getId());
+            List<String> urls = imgs.stream().map(ProductImage::getImageUrl).collect(Collectors.toList());
             dto.setImageUrls(urls);
             if (!urls.isEmpty()) {
                 dto.setPrimaryImage(urls.get(0));
-            } else {
-                dto.setPrimaryImage("https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800");
             }
         } catch (Exception ignored) {
-            dto.setPrimaryImage("https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800");
+            dto.setImageUrls(Collections.emptyList());
         }
 
+        dto.calculateDiscount();
         return dto;
     }
 }

@@ -1,7 +1,7 @@
 .create-modal-content {
   position: relative;
   width: 100%;
-  max-width: 640px;
+  max-width: 680px;
   background: #0f172a;
   border: 1px solid var(--border-hover);
   border-radius: var(--radius-lg);
@@ -69,6 +69,38 @@
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
+}
+
+.price-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.price-prefix {
+  position: absolute;
+  left: 12px;
+  color: var(--emerald-400);
+  font-weight: 700;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.price-input-wrapper input {
+  padding-left: 28px !important;
+}
+
+.discount-preview-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--emerald-300);
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-xs);
+  animation: fadeIn 0.3s ease-out;
 }
 
 .form-group input,

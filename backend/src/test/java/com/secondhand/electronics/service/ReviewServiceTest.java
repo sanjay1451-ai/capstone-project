@@ -72,6 +72,8 @@ class ReviewServiceTest {
         ProductDTO p = new ProductDTO();
         p.setSellerId(5L);
         p.setTitle("Sony WH-1000XM5");
+        p.setCategory("Audio");
+        p.setCondition("LIKE_NEW");
         p.setPrice(new BigDecimal("279.00"));
         var createdProduct = productService.createProduct(p);
         Long productId = createdProduct.getId();

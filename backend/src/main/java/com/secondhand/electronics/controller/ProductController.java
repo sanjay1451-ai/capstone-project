@@ -7,6 +7,8 @@ import com.secondhand.electronics.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +40,28 @@ public class ProductController {
     }
 
     /**
+     * GET /api/products/my-listings
+     * Retrieve all listings created by current authenticated user
+     */
+    @GetMapping("/my-listings")
+    public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> getMyListings() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to view your listings"));
+        }
+
+        try {
+            String userEmail = auth.getName();
+            List<ProductResponseDTO> myListings = productService.getMyListings(userEmail);
+            return ResponseEntity.ok(ApiResponse.success("My listings retrieved successfully", myListings));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve listings: " + e.getMessage()));
+        }
+    }
+
+    /**
      * GET /api/products/{id}
      * Retrieve single product with seller and image details
      */
@@ -51,46 +75,92 @@ public class ProductController {
 
     /**
      * POST /api/products
-     * Create a new product listing
+     * Create a new product listing (Authenticated seller)
      */
     @PostMapping
     public ResponseEntity<ApiResponse<ProductResponseDTO>> createProduct(@Valid @RequestBody ProductDTO dto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to list a device for sale"));
+        }
+
         try {
-            ProductResponseDTO created = productService.createProduct(dto);
+            String userEmail = auth.getName();
+            ProductResponseDTO created = productService.createProduct(dto, userEmail);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Product listed successfully", created));
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to create product: " + e.getMessage()));
         }
     }
 
     /**
      * PUT /api/products/{id}
-     * Update an existing product
+     * Update an existing product (Seller ownership check)
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponseDTO>> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductDTO dto
     ) {
-        return productService.updateProduct(id, dto)
-                .map(updated -> ResponseEntity.ok(ApiResponse.success("Product updated successfully", updated)))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Product not found with ID: " + id)));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to edit this listing"));
+        }
+
+        try {
+            String userEmail = auth.getName();
+            return productService.updateProduct(id, dto, userEmail)
+                    .map(updated -> ResponseEntity.ok(ApiResponse.success("Product updated successfully", updated)))
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(ApiResponse.error("Product not found with ID: " + id)));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to update product: " + e.getMessage()));
+        }
     }
 
     /**
      * DELETE /api/products/{id}
-     * Delete a product
+     * Delete a product (Seller ownership check)
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
-        boolean deleted = productService.deleteProduct(id);
-        if (deleted) {
-            return ResponseEntity.ok(ApiResponse.success("Product deleted successfully", null));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to delete this listing"));
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("Product not found with ID: " + id));
+
+        try {
+            String userEmail = auth.getName();
+            boolean deleted = productService.deleteProduct(id, userEmail);
+            if (deleted) {
+                return ResponseEntity.ok(ApiResponse.success("Product deleted successfully", null));
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Product not found with ID: " + id));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to delete product: " + e.getMessage()));
+        }
     }
 }

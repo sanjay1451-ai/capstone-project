@@ -1,5 +1,5 @@
 # Second-Hand Electronics Trading Platform (VoltTrade)
-> **Capstone Project — Full Ecosystem: Authentication, Marketplace, Orders, Barter Swaps, Wishlist & Reviews**
+> **Capstone Project — Full Ecosystem: Authentication, Product Catalog, Sell Module, Orders, Barter Swaps, Wishlist & Reviews**
 
 A full-stack, scalable recommerce platform designed to securely buy, sell, and exchange second-hand electronic devices. The system promotes affordable technology access while reducing global electronic waste through circular tech recommerce.
 
@@ -9,7 +9,7 @@ A full-stack, scalable recommerce platform designed to securely buy, sell, and e
 
 The system consists of two decoupled, independently deployable tiers:
 
-- **Frontend**: React.js SPA powered by Vite 5 with CSS3 design tokens, dark glassmorphism, responsive product cards, search/filter bars, details modal with reviews, direct checkout modal (`CheckoutModal`), device trade proposal modal (`ExchangeModal`), user management center dashboard (`Dashboard`), authentication modal (`AuthModal`), user profile dashboard (`Profile`), and centralized API services with JWT auto-injection (`api.js`, `authService.js`, `orderService.js`, `exchangeService.js`, `favoriteService.js`, `reviewService.js`, `categoryService.js`, `productService.js`, `imageService.js`).
+- **Frontend**: React.js SPA powered by Vite 5 with CSS3 design tokens, dark glassmorphism, responsive product cards, search/filter bars, details modal with reviews, direct checkout modal (`CheckoutModal`), device trade proposal modal (`ExchangeModal`), user management center dashboard (`Dashboard`), authentication modal (`AuthModal`), dedicated Sell Electronics page (`Sell`), multi-photo image uploader (`ImageUpload`), user profile dashboard (`Profile`), and centralized API services with JWT auto-injection (`api.js`, `authService.js`, `productService.js`, `orderService.js`, `exchangeService.js`, `favoriteService.js`, `reviewService.js`, `categoryService.js`, `imageService.js`).
 - **Backend**: Java Spring Boot 3.3.x RESTful API structured in a clean, layered architecture (`controller`, `service`, `repository`, `entity`, `dto`, `config`, `security`) secured with Spring Security 6, JJWT, and BCrypt password hashing connected to Supabase PostgreSQL across all 8 relational tables.
 
 ```
@@ -17,9 +17,10 @@ The system consists of two decoupled, independently deployable tiers:
 │              React.js (Vite) Frontend SPA              │
 │                 http://localhost:5173                  │
 ├────────────────────────────────────────────────────────┤
-│  Home • Marketplace • Categories • User Dashboard      │
-│  My Purchases • Incoming Sales • Exchange Hub • Saved  │
-│  Direct Checkout Modal • Device Trade Barter Modal     │
+│  Home • Marketplace • Categories • Sell Device Page    │
+│  User Dashboard (My Listings • Purchases • Sales)      │
+│  Exchange Hub • Saved Wishlist • Image Uploader        │
+│  Direct Checkout Modal • Device Barter Swap Modal      │
 │  Auth Context (JWT Token in localStorage & Auto Header)│
 └───────────────────────────┬────────────────────────────┘
                             │ CORS (REST / JSON / Bearer JWT)
@@ -28,9 +29,10 @@ The system consists of two decoupled, independently deployable tiers:
 │               Spring Boot 3.3.x Backend                │
 │                 http://localhost:8080                  │
 ├────────────────────────────────────────────────────────┤
-│  Auth API (/api/auth) • Orders API (/api/orders)       │
-│  Exchanges API (/api/exchanges) • Favorites API        │
-│  Reviews API (/api/products/*/reviews) • Catalog API   │
+│  Auth API (/api/auth) • Products CRUD (/api/products)  │
+│  Orders API (/api/orders) • Exchanges (/api/exchanges) │
+│  Favorites API (/api/favorites) • Reviews API          │
+│  Seller Ownership Validator • Input/Price Validator    │
 │  Spring Security Filter Chain • OncePerRequest Filter  │
 │  BCrypt Password Encoder • JJWT Token Generator/Parser │
 │  JPA Entities: 8 Relational Models (User, Product...)  │
@@ -41,8 +43,35 @@ The system consists of two decoupled, independently deployable tiers:
 │                Supabase PostgreSQL DB                  │
 │  (users, products, categories, orders, exchanges,      │
 │   favorites, reviews, product_images)                  │
-└────────────────────────────────────────────────────────┘
+└───────────────────────────┘
 ```
+
+---
+
+## 🏷️ Sell Electronics Module (Phase 4)
+
+### Seller Form & Listing Features:
+- **Device Specifications**: Product title, category dropdown, brand, model code/number, detailed description.
+- **Condition Grading**:
+  - `LIKE_NEW`: Flawless condition, original packaging & accessories.
+  - `EXCELLENT`: Minimal cosmetic signs of use, 100% functional.
+  - `GOOD`: Minor scratches or scuffs, fully tested & working.
+  - `FAIR`: Visible wear or battery degradation, fully operational.
+  - `USED`: Standard secondhand device, tested and verified.
+- **Smart Pricing & Discount Calculator**: Live percentage discount and savings display compared to original retail price.
+- **Image Handling & Uploader (`ImageUpload`)**:
+  - Drag-and-drop file upload with preview.
+  - Custom image URL support.
+  - Curated high-resolution gadget preset selector.
+  - Primary cover photo selector and instant thumbnail removal.
+- **Ownership & Security Enforcement**:
+  - Only authenticated users can create listings.
+  - Users can only edit and delete their **own** listings (`SecurityException` / `403 Forbidden` if unauthorized).
+  - Platform administrators (`ROLE_ADMIN`) have global moderation privileges.
+- **My Listings Dashboard**:
+  - View all user listings with status badges (`AVAILABLE`, `RESERVED`, `SOLD`, `EXCHANGED`).
+  - One-click edit listing modal with prefilled data.
+  - Delete listing with confirmation prompt.
 
 ---
 
@@ -74,8 +103,8 @@ The complete SQL schema is located in [`supabase_schema.sql`](file:///e:/electro
 | **`categories`** | `id (BIGSERIAL)` | — | `name (UNIQUE)`, `description` |
 | **`products`** | `id (BIGSERIAL)` | `seller_id -> users(id)` | `title`, `description`, `category`, `brand`, `model`, `condition`, `price`, `original_price`, `location`, `status`, `created_at`, `updated_at` |
 | **`product_images`** | `id (BIGSERIAL)` | `product_id -> products(id)` | `image_url` |
-| **`orders`** | `id (BIGSERIAL)` | `buyer_id -> users(id)`, `product_id -> products(id)` | `quantity`, `total_price`, `order_status (PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED)`, `created_at` |
-| **`exchange_requests`**| `id (BIGSERIAL)` | `requester_id -> users(id)`, `product_id -> products(id)`, `offered_product_id -> products(id)` | `message`, `status (PENDING, ACCEPTED, REJECTED, CANCELLED)`, `created_at` |
+| **`orders`** | `id (BIGSERIAL)` | `buyer_id -> users(id)`, `product_id -> products(id)` | `quantity`, `total_price`, `order_status`, `created_at` |
+| **`exchange_requests`**| `id (BIGSERIAL)` | `requester_id -> users(id)`, `product_id -> products(id)`, `offered_product_id -> products(id)` | `message`, `status`, `created_at` |
 | **`favorites`** | `id (BIGSERIAL)` | `user_id -> users(id)`, `product_id -> products(id)` | `created_at`, `UNIQUE(user_id, product_id)` |
 | **`reviews`** | `id (BIGSERIAL)` | `reviewer_id -> users(id)`, `product_id -> products(id)` | `rating (1-5)`, `comment`, `created_at` |
 
@@ -91,53 +120,22 @@ The complete SQL schema is located in [`supabase_schema.sql`](file:///e:/electro
 | **HTTP Client** | Axios | Configured with automatic `Authorization: Bearer <token>` interceptor |
 | **Backend** | Java 17+ / Spring Boot 3.3.4 | RESTful API Engine |
 | **Security** | Spring Security 6 + JJWT | Stateless JWT filter + BCrypt password hashing |
-| **Testing** | JUnit 5 + Mockito | 16 Automated unit tests covering all services |
+| **Testing** | JUnit 5 + Mockito | 20 Automated unit tests covering all services |
 | **Build Tool** | Apache Maven | Multi-module build management |
 | **Database** | Supabase PostgreSQL | Cloud-native relational PostgreSQL engine |
 | **Version Control**| Git / GitHub | Continuous integration & version control |
 
 ---
 
-## 🔒 Supabase PostgreSQL Setup
-
-### Step 1: Run SQL Schema in Supabase
-1. Log in to [Supabase](https://supabase.com) and open your project.
-2. Navigate to **SQL Editor** in the left sidebar.
-3. Copy the contents of [`supabase_schema.sql`](file:///e:/electronic%20project/supabase_schema.sql) and paste it into the editor.
-4. Click **Run** to execute the script and generate all 8 tables and indexes.
-
-### Step 2: Configure Environment Variables
-Inside the `backend/` directory, update `.env`:
-
-```env
-# Full Supabase Connection String:
-SPRING_DATASOURCE_URL=jdbc:postgresql://aws-0-[region].pooler.supabase.com:6543/postgres?sslmode=require
-DB_USERNAME=postgres.[your-project-ref]
-DB_PASSWORD=your_supabase_password_here
-```
-
----
-
-## 🚀 Running the Application
-
-### 1. Run Backend (Spring Boot)
-```bash
-cd backend
-mvn spring-boot:run
-```
-*Backend runs at:* **`http://localhost:8080`**
-
-### 2. Run Frontend (React + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-*Frontend runs at:* **`http://localhost:5173`**
-
----
-
 ## 📡 Complete REST API Reference
+
+### 📱 Product & Sell Module API (Phase 4)
+- **`GET /api/products`** — Search and filter products (`?category=...&status=...&brand=...&condition=...&search=...`)
+- **`GET /api/products/{id}`** — Retrieve single product details with seller and image attachments
+- **`GET /api/products/my-listings`** *(Protected)* — Retrieve all listings created by the authenticated seller
+- **`POST /api/products`** *(Protected)* — Create a new listing (automatically sets seller ID from token)
+- **`PUT /api/products/{id}`** *(Protected)* — Update an existing listing (validates seller ownership)
+- **`DELETE /api/products/{id}`** *(Protected)* — Delete a product (validates seller ownership)
 
 ### 🔐 Authentication API (Phase 3)
 - **`POST /api/auth/register`** — Register new user account
@@ -146,47 +144,32 @@ npm run dev
 - **`PUT /api/auth/profile`** *(Protected)* — Update user's name, phone, address, profile image
 - **`GET /api/auth/user/{id}`** — Retrieve public profile for a seller/user
 
-### 📦 Orders & Purchases API (Phase 4)
+### 📦 Orders & Purchases API
 - **`POST /api/orders`** *(Protected)* — Place an order to purchase a device
 - **`GET /api/orders/my-orders`** *(Protected)* — List purchases made by authenticated buyer
 - **`GET /api/orders/seller-orders`** *(Protected)* — List sales orders received by seller
-- **`PUT /api/orders/{id}/status`** *(Protected)* — Update order fulfillment status (`CONFIRMED`, `SHIPPED`, `DELIVERED`, `CANCELLED`)
+- **`PUT /api/orders/{id}/status`** *(Protected)* — Update order fulfillment status
 
-### 🔄 Device Barter & Exchange API (Phase 4)
-- **`POST /api/exchanges`** *(Protected)* — Propose a device-for-device swap with negotiation note
-- **`GET /api/exchanges/received`** *(Protected)* — View trade proposals received for user's listings
-- **`GET /api/exchanges/sent`** *(Protected)* — View trade proposals submitted by user
+### 🔄 Device Barter & Exchange API
+- **`POST /api/exchanges`** *(Protected)* — Propose a device swap with negotiation note
+- **`GET /api/exchanges/received`** *(Protected)* — View trade proposals received
+- **`GET /api/exchanges/sent`** *(Protected)* — View trade proposals submitted
 - **`PUT /api/exchanges/{id}/status`** *(Protected)* — Accept, reject, or cancel trade proposal
 
-### ❤️ Wishlist / Favorites API (Phase 4)
+### ❤️ Wishlist & Reviews API
 - **`POST /api/favorites/{productId}`** *(Protected)* — Toggle product bookmark in user wishlist
 - **`GET /api/favorites`** *(Protected)* — Retrieve all favorited products
-- **`GET /api/favorites/check/{productId}`** — Check if specific product is favorited
-
-### ⭐ Ratings & Reviews API (Phase 4)
 - **`POST /api/products/{productId}/reviews`** *(Protected)* — Submit 1-5 star rating and comment
 - **`GET /api/products/{productId}/reviews`** — View all reviews for a product
-- **`GET /api/products/{productId}/rating-summary`** — Retrieve average star rating and review count
-
-### 🏷️ Categories & Products API (Phase 2)
-- **`GET /api/categories`** — Retrieve all categories
-- **`GET /api/products`** — Search and filter products (`?category=...&status=...&brand=...&condition=...&search=...`)
-- **`GET /api/products/{id}`** — Retrieve single product details with seller and image attachments
-- **`POST /api/products`** *(Protected)* — Create a new listing
-- **`PUT /api/products/{id}`** *(Protected)* — Update an existing listing
-- **`DELETE /api/products/{id}`** *(Protected)* — Delete a product
-
-### 🩺 Health Check (Phase 1)
-- **`GET /api/health`** — Returns `{"status": "Backend is running", "environment": "dev", "version": "1.0.0"}`
 
 ---
 
 ## 🧪 Build & Test Verification
 
-### Backend Automated Unit Tests (16 Tests):
+### Backend Automated Unit Tests (20 Tests):
 ```bash
 cd backend
-mvn test "-Dtest=AuthServiceTest,OrderServiceTest,ExchangeRequestServiceTest,FavoriteServiceTest,ReviewServiceTest"
+mvn test "-Dtest=AuthServiceTest,ProductServiceTest,OrderServiceTest,ExchangeRequestServiceTest,FavoriteServiceTest,ReviewServiceTest"
 ```
 
 ### Frontend Production Build:

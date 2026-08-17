@@ -79,6 +79,8 @@ class OrderServiceTest {
         ProductDTO pDto = new ProductDTO();
         pDto.setSellerId(5L);
         pDto.setTitle("iPhone 14 Pro");
+        pDto.setCategory("Smartphones");
+        pDto.setCondition("LIKE_NEW");
         pDto.setPrice(new BigDecimal("799.00"));
         var createdProduct = productService.createProduct(pDto);
         Long productId = createdProduct.getId();
@@ -111,6 +113,8 @@ class OrderServiceTest {
         ProductDTO pDto = new ProductDTO();
         pDto.setSellerId(5L);
         pDto.setTitle("iPhone 14 Pro");
+        pDto.setCategory("Smartphones");
+        pDto.setCondition("LIKE_NEW");
         pDto.setPrice(new BigDecimal("799.00"));
         var createdProduct = productService.createProduct(pDto);
         Long productId = createdProduct.getId();
@@ -137,6 +141,8 @@ class OrderServiceTest {
         ProductDTO pDto = new ProductDTO();
         pDto.setSellerId(5L);
         pDto.setTitle("iPhone 14 Pro");
+        pDto.setCategory("Smartphones");
+        pDto.setCondition("LIKE_NEW");
         pDto.setPrice(new BigDecimal("799.00"));
         var createdProduct = productService.createProduct(pDto);
         Long productId = createdProduct.getId();

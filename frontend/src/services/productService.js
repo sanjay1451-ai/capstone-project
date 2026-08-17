@@ -75,5 +75,19 @@ export const productService = {
       console.error(`[ProductService] Error deleting product ${id}:`, error);
       throw error;
     }
+  },
+
+  /**
+   * Get all listings created by current logged-in user
+   * @returns {Promise<Array>}
+   */
+  async getMyListings() {
+    try {
+      const response = await api.get('/api/products/my-listings');
+      return response.data?.data || [];
+    } catch (error) {
+      console.error('[ProductService] Error fetching my listings:', error);
+      throw error;
+    }
   }
 };

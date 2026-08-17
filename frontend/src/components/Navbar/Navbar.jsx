@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Zap, PlusCircle, ShoppingBag, Layers, Activity, User, LogIn, UserPlus, LogOut, Shield, ChevronDown, ArrowRightLeft, Heart, LayoutDashboard } from 'lucide-react';
+import { Zap, PlusCircle, ShoppingBag, Layers, Activity, User, LogIn, UserPlus, LogOut, Shield, ChevronDown, ArrowRightLeft, Heart, LayoutDashboard, Tag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
@@ -33,7 +33,7 @@ export default function Navbar({
   const handleLogoutClick = () => {
     setIsDropdownOpen(false);
     logout();
-    if (activeTab === 'dashboard' || activeTab === 'profile') {
+    if (activeTab === 'dashboard' || activeTab === 'profile' || activeTab === 'sell') {
       onSelectTab('home');
     }
   };
@@ -73,6 +73,13 @@ export default function Navbar({
           >
             <Layers size={16} />
             <span>Categories</span>
+          </button>
+          <button 
+            className={`nav-link-btn ${activeTab === 'sell' ? 'active' : ''}`}
+            onClick={() => onSelectTab('sell')}
+          >
+            <Tag size={16} />
+            <span>Sell Device</span>
           </button>
           {isAuthenticated && (
             <button 
@@ -170,6 +177,13 @@ export default function Navbar({
                     >
                       <LayoutDashboard size={16} />
                       <span>User Dashboard</span>
+                    </button>
+                    <button
+                      className={`menu-item-btn ${activeTab === 'sell' ? 'item-active' : ''}`}
+                      onClick={() => handleTabClick('sell')}
+                    >
+                      <Tag size={16} />
+                      <span>Sell Device</span>
                     </button>
                     <button
                       className={`menu-item-btn ${activeTab === 'profile' ? 'item-active' : ''}`}

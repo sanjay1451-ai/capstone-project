@@ -10,7 +10,6 @@ public class ProductDTO {
 
     private Long id;
 
-    @NotNull(message = "Seller ID is required")
     private Long sellerId;
 
     @NotBlank(message = "Product title is required")
@@ -25,7 +24,7 @@ public class ProductDTO {
     private String model;
 
     @NotBlank(message = "Condition is required")
-    private String condition; // 'LIKE_NEW', 'EXCELLENT', 'GOOD', 'FAIR'
+    private String condition; // 'LIKE_NEW', 'EXCELLENT', 'GOOD', 'FAIR', 'USED'
 
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.01", message = "Price must be greater than 0")

@@ -72,6 +72,8 @@ class ExchangeRequestServiceTest {
         ProductDTO p1 = new ProductDTO();
         p1.setSellerId(5L);
         p1.setTitle("MacBook Pro M2");
+        p1.setCategory("Laptops");
+        p1.setCondition("LIKE_NEW");
         p1.setPrice(new BigDecimal("1299.00"));
         var targetProduct = productService.createProduct(p1);
 
@@ -79,6 +81,8 @@ class ExchangeRequestServiceTest {
         ProductDTO p2 = new ProductDTO();
         p2.setSellerId(20L);
         p2.setTitle("iPad Pro 12.9");
+        p2.setCategory("Tablets");
+        p2.setCondition("EXCELLENT");
         p2.setPrice(new BigDecimal("799.00"));
         var offeredProduct = productService.createProduct(p2);
 
@@ -110,11 +114,17 @@ class ExchangeRequestServiceTest {
         ProductDTO p1 = new ProductDTO();
         p1.setSellerId(20L);
         p1.setTitle("MacBook Pro M2");
+        p1.setCategory("Laptops");
+        p1.setCondition("LIKE_NEW");
+        p1.setPrice(new BigDecimal("1299.00"));
         var targetProduct = productService.createProduct(p1);
 
         ProductDTO p2 = new ProductDTO();
         p2.setSellerId(20L);
         p2.setTitle("iPad Pro 12.9");
+        p2.setCategory("Tablets");
+        p2.setCondition("EXCELLENT");
+        p2.setPrice(new BigDecimal("799.00"));
         var offeredProduct = productService.createProduct(p2);
 
         CreateExchangeRequestDTO req = new CreateExchangeRequestDTO(targetProduct.getId(), offeredProduct.getId(), "Swap");

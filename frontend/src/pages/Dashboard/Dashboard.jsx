@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, ArrowRightLeft, Heart, User, CheckCircle2, Clock, Truck, Package, XCircle, AlertCircle, RefreshCw, Eye, Tag, Trash2, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, ArrowRightLeft, Heart, User, CheckCircle2, Clock, Truck, Package, XCircle, AlertCircle, RefreshCw, Eye, Tag, Trash2, ArrowLeft, Edit, Plus, Sparkles, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../services/orderService';
 import { exchangeService } from '../../services/exchangeService';
 import { favoriteService } from '../../services/favoriteService';
+import { productService } from '../../services/productService';
 import Profile from '../Profile/Profile';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import './Dashboard.css';
@@ -12,13 +13,15 @@ export default function Dashboard({
   initialTab = 'purchases',
   onSelectProduct,
   onOpenCreateModal,
+  onEditProduct,
   onOpenAuthModal,
   onBackToHome
 }) {
   const { user, isAuthenticated } = useAuth();
-  const [currentTab, setCurrentTab] = useState(initialTab); // 'purchases' | 'sales' | 'exchanges' | 'wishlist' | 'profile'
+  const [currentTab, setCurrentTab] = useState(initialTab); // 'listings' | 'purchases' | 'sales' | 'exchanges' | 'wishlist' | 'profile'
 
   // Data states
+  const [myListings, setMyListings] = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [sales, setSales] = useState([]);
   const [sentExchanges, setSentExchanges] = useState([]);
@@ -26,6 +29,10 @@ export default function Dashboard({
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionFeedback, setActionFeedback] = useState({ state: 'idle', message: '' });
+
+  // Delete modal state
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadDashboardData = async () => {
     if (!isAuthenticated) {
@@ -35,7 +42,8 @@ export default function Dashboard({
 
     setLoading(true);
     try {
-      const [myOrdersData, mySalesData, sentExData, recExData, favsData] = await Promise.allSettled([
+      const [listingsData, myOrdersData, mySalesData, sentExData, recExData, favsData] = await Promise.allSettled([
+        productService.getMyListings(),
         orderService.getMyOrders(),
         orderService.getSellerOrders(),
         exchangeService.getSentExchanges(),
@@ -43,6 +51,7 @@ export default function Dashboard({
         favoriteService.getMyFavorites()
       ]);
 
+      if (listingsData.status === 'fulfilled') setMyListings(listingsData.value);
       if (myOrdersData.status === 'fulfilled') setPurchases(myOrdersData.value);
       if (mySalesData.status === 'fulfilled') setSales(mySalesData.value);
       if (sentExData.status === 'fulfilled') setSentExchanges(sentExData.value);
@@ -58,6 +67,21 @@ export default function Dashboard({
   useEffect(() => {
     loadDashboardData();
   }, [isAuthenticated]);
+
+  const handleDeleteListing = async (productId) => {
+    setDeleting(true);
+    try {
+      await productService.deleteProduct(productId);
+      setMyListings(prev => prev.filter(p => p.id !== productId));
+      setActionFeedback({ state: 'success', message: 'Listing deleted successfully' });
+      setDeleteConfirmId(null);
+      setTimeout(() => setActionFeedback({ state: 'idle', message: '' }), 3500);
+    } catch (err) {
+      setActionFeedback({ state: 'error', message: err.response?.data?.message || err.message || 'Failed to delete listing' });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
@@ -98,7 +122,7 @@ export default function Dashboard({
             <ShoppingBag size={40} className="text-accent" />
           </div>
           <h2>Sign In to Access Dashboard</h2>
-          <p>View your purchases, sales orders, barter trade proposals, and saved wishlist.</p>
+          <p>View your listings, purchases, sales orders, barter trade proposals, and saved wishlist.</p>
           <div className="unauth-actions">
             <button className="btn btn-primary" onClick={() => onOpenAuthModal('login')}>
               Sign In
@@ -115,15 +139,20 @@ export default function Dashboard({
   const getStatusBadge = (status) => {
     const s = (status || 'PENDING').toUpperCase();
     switch (s) {
+      case 'AVAILABLE':
+        return <span className="status-pill status-delivered"><CheckCircle2 size={13} /> Active</span>;
       case 'DELIVERED':
       case 'ACCEPTED':
+      case 'SOLD':
         return <span className="status-pill status-delivered"><CheckCircle2 size={13} /> {s}</span>;
       case 'SHIPPED':
+      case 'RESERVED':
         return <span className="status-pill status-shipped"><Truck size={13} /> {s}</span>;
       case 'CONFIRMED':
         return <span className="status-pill status-confirmed"><Package size={13} /> {s}</span>;
       case 'CANCELLED':
       case 'REJECTED':
+      case 'EXCHANGED':
         return <span className="status-pill status-cancelled"><XCircle size={13} /> {s}</span>;
       default:
         return <span className="status-pill status-pending"><Clock size={13} /> {s}</span>;
@@ -143,6 +172,7 @@ export default function Dashboard({
           <p className="dashboard-subheading">Welcome back, <strong>{user?.name}</strong> &bull; {user?.role}</p>
         </div>
         <button className="btn btn-primary" onClick={onOpenCreateModal}>
+          <Plus size={16} />
           <span>List a Device</span>
         </button>
       </div>
@@ -159,6 +189,15 @@ export default function Dashboard({
       {/* Dashboard Navigation Tabs */}
       <div className="dashboard-tabs-bar">
         <button
+          className={`dash-tab-btn ${currentTab === 'listings' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('listings')}
+        >
+          <Tag size={17} />
+          <span>My Listings</span>
+          {myListings.length > 0 && <span className="tab-counter">{myListings.length}</span>}
+        </button>
+
+        <button
           className={`dash-tab-btn ${currentTab === 'purchases' ? 'active' : ''}`}
           onClick={() => setCurrentTab('purchases')}
         >
@@ -171,7 +210,7 @@ export default function Dashboard({
           className={`dash-tab-btn ${currentTab === 'sales' ? 'active' : ''}`}
           onClick={() => setCurrentTab('sales')}
         >
-          <Tag size={17} />
+          <Package size={17} />
           <span>Incoming Sales</span>
           {sales.length > 0 && <span className="tab-counter">{sales.length}</span>}
         </button>
@@ -204,6 +243,99 @@ export default function Dashboard({
           <span>Profile & Settings</span>
         </button>
       </div>
+
+      {/* ================= TAB 0: MY LISTINGS ================= */}
+      {currentTab === 'listings' && (
+        <div className="dashboard-tab-content">
+          <div className="dash-section-header">
+            <div>
+              <h3>My Listed Devices</h3>
+              <p className="text-muted">Manage, edit specifications, change prices, or delete your electronic listings.</p>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={onOpenCreateModal}>
+              <Plus size={14} />
+              <span>Add New Listing</span>
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="dash-loading"><div className="spinner-sm"></div></div>
+          ) : myListings.length === 0 ? (
+            <div className="dash-empty-card glass-card">
+              <Tag size={36} className="text-accent" />
+              <h4>No Active Listings</h4>
+              <p>You haven't listed any electronic devices for sale yet. Turn your unused tech into cash!</p>
+              <button className="btn btn-primary" onClick={onOpenCreateModal}>List Your First Device</button>
+            </div>
+          ) : (
+            <div className="my-listings-grid">
+              {myListings.map(prod => (
+                <div key={prod.id} className="my-listing-card glass-card">
+                  <div className="my-listing-img-box">
+                    <img
+                      src={prod.primaryImage || (prod.imageUrls && prod.imageUrls[0]) || 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=500'}
+                      alt={prod.title}
+                    />
+                    <span className="listing-condition-badge">{prod.condition}</span>
+                  </div>
+
+                  <div className="my-listing-body">
+                    <div className="my-listing-header-row">
+                      <span className="listing-cat">{prod.category}</span>
+                      {getStatusBadge(prod.status)}
+                    </div>
+
+                    <h4 className="my-listing-title" onClick={() => onSelectProduct(prod)}>
+                      {prod.title}
+                    </h4>
+
+                    <div className="my-listing-price-row">
+                      <span className="my-listing-price">${parseFloat(prod.price || 0).toFixed(2)}</span>
+                      {prod.originalPrice && parseFloat(prod.originalPrice) > parseFloat(prod.price) && (
+                        <span className="my-listing-orig">${parseFloat(prod.originalPrice).toFixed(2)}</span>
+                      )}
+                    </div>
+
+                    <p className="my-listing-desc">
+                      {prod.description ? prod.description.substring(0, 80) + '...' : 'No description provided.'}
+                    </p>
+
+                    <div className="my-listing-footer">
+                      <span className="my-listing-date">
+                        {prod.createdAt ? new Date(prod.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Active'}
+                      </span>
+
+                      <div className="my-listing-action-btns">
+                        <button
+                          className="btn-listing-action view"
+                          onClick={() => onSelectProduct(prod)}
+                          title="View product"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          className="btn-listing-action edit"
+                          onClick={() => onEditProduct ? onEditProduct(prod) : onOpenCreateModal(prod)}
+                          title="Edit listing"
+                        >
+                          <Edit size={15} />
+                        </button>
+                        <button
+                          className="btn-listing-action delete"
+                          onClick={() => setDeleteConfirmId(prod.id)}
+                          title="Delete listing"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ================= TAB 1: PURCHASES ================= */}
       {currentTab === 'purchases' && (
@@ -291,7 +423,7 @@ export default function Dashboard({
             <div className="dash-loading"><div className="spinner-sm"></div></div>
           ) : sales.length === 0 ? (
             <div className="dash-empty-card glass-card">
-              <Tag size={36} className="text-accent" />
+              <Package size={36} className="text-accent" />
               <h4>No Sales Orders Yet</h4>
               <p>When buyers order your listed electronics, their orders will appear here for fulfillment.</p>
               <button className="btn btn-primary" onClick={onOpenCreateModal}>List Device for Sale</button>
@@ -519,6 +651,36 @@ export default function Dashboard({
           onOpenCreateModal={onOpenCreateModal}
           onBackToHome={onBackToHome}
         />
+      )}
+
+      {/* Delete Listing Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="modal-backdrop" onClick={() => setDeleteConfirmId(null)}>
+          <div className="modal-content glass-card delete-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="delete-icon-wrap">
+              <AlertTriangle size={36} className="text-danger" />
+            </div>
+            <h3>Delete Device Listing?</h3>
+            <p>Are you sure you want to permanently remove this listing from the marketplace? This action cannot be undone.</p>
+            
+            <div className="delete-modal-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setDeleteConfirmId(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => handleDeleteListing(deleteConfirmId)}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete Listing'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

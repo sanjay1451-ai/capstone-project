@@ -1,8 +1,8 @@
 import React from 'react';
-import { ArrowRight, Sparkles, ShieldCheck, Leaf, RefreshCw, Smartphone, Laptop, Headphones, Gamepad2 } from 'lucide-react';
+import { ArrowRight, Sparkles, ShieldCheck, Leaf, RefreshCw, Smartphone, Laptop, Headphones, Gamepad2, PlusCircle, ShoppingBag } from 'lucide-react';
 import './Hero.css';
 
-export default function Hero() {
+export default function Hero({ onExploreMarketplace, onListDevice }) {
   return (
     <section className="hero-section">
       <div className="container hero-container">
@@ -11,7 +11,7 @@ export default function Hero() {
         <div className="hero-badge-wrapper">
           <div className="badge badge-emerald">
             <Sparkles size={14} />
-            <span>Capstone Project &bull; Phase 1 Foundation</span>
+            <span>VoltTrade &bull; Secure JWT Auth & Recommerce</span>
           </div>
         </div>
 
@@ -24,18 +24,19 @@ export default function Hero() {
         {/* Subtitle */}
         <p className="hero-description">
           A secure, community-driven marketplace built to buy, sell, and exchange 
-          verified second-hand devices. Upgrade your tech affordably while accelerating the circular economy.
+          verified second-hand devices. Upgrade your tech affordably with cryptographically secure authentication.
         </p>
 
         {/* CTAs */}
         <div className="hero-actions">
-          <a href="#health-check" className="btn btn-primary">
-            <span>Test API Health</span>
-            <ArrowRight size={18} />
-          </a>
-          <a href="#features" className="btn btn-secondary">
-            <span>Platform Overview</span>
-          </a>
+          <button className="btn btn-primary" onClick={onExploreMarketplace}>
+            <ShoppingBag size={18} />
+            <span>Explore Marketplace</span>
+          </button>
+          <button className="btn btn-secondary" onClick={onListDevice}>
+            <PlusCircle size={18} />
+            <span>List Your Device</span>
+          </button>
         </div>
 
         {/* Impact Counters & Trust Badges */}
@@ -66,7 +67,7 @@ export default function Hero() {
             </div>
             <div className="stat-info">
               <span className="stat-number">Secure & Verified</span>
-              <span className="stat-label">JWT + Spring Security</span>
+              <span className="stat-label">BCrypt + JWT Protected</span>
             </div>
           </div>
         </div>

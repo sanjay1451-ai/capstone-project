@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public Auth Endpoints
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/user/**").permitAll()
                         // Public Health Check Endpoint (Phase 1)
                         .requestMatchers("/api/health").permitAll()
                         // Public Browse Endpoints (Read-Only)
@@ -56,6 +57,7 @@ public class SecurityConfig {
 
                         // Protected User Profile & Resource Modification Endpoints
                         .requestMatchers("/api/auth/me").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/auth/profile").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/products/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/products/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**").authenticated()

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, ShoppingBag, Layers, Activity, Plus } from 'lucide-react';
+import { ArrowRight, Sparkles, ShoppingBag, Layers, Activity, Plus, User, ShieldCheck } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import Hero from '../../components/Hero/Hero';
 import HealthCheck from '../../components/HealthCheck/HealthCheck';
@@ -8,20 +8,29 @@ import Footer from '../../components/Footer/Footer';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import ProductDetailsModal from '../../components/ProductDetailsModal/ProductDetailsModal';
 import CreateProductModal from '../../components/CreateProductModal/CreateProductModal';
+import AuthModal from '../../components/AuthModal/AuthModal';
 import ProductListing from '../ProductListing/ProductListing';
 import Categories from '../Categories/Categories';
+import Profile from '../Profile/Profile';
+import { useAuth } from '../../context/AuthContext';
 import { useHealthCheck } from '../../hooks/useHealthCheck';
 import { productService } from '../../services/productService';
 import { categoryService } from '../../services/categoryService';
 import './Home.css';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'health'
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'health' | 'profile'
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  
+  // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState('login');
+
+  const { isAuthenticated, user } = useAuth();
 
   // Phase 1 Live Health Check Hook
   const { status, data, latency, error, lastChecked, refetch } = useHealthCheck(true);
@@ -57,13 +66,27 @@ export default function Home() {
     }
   };
 
+  const handleOpenAuthModal = (tab = 'login') => {
+    setAuthModalTab(tab);
+    setIsAuthModalOpen(true);
+  };
+
+  const handleOpenCreateModal = () => {
+    if (!isAuthenticated) {
+      handleOpenAuthModal('login');
+    } else {
+      setIsCreateModalOpen(true);
+    }
+  };
+
   return (
     <div className="home-page">
-      {/* Navigation Header with Live Status */}
+      {/* Navigation Header with Live Status & Auth State */}
       <Navbar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
-        onOpenCreateModal={() => setIsCreateModalOpen(true)}
+        onOpenCreateModal={handleOpenCreateModal}
+        onOpenAuthModal={handleOpenAuthModal}
         backendStatus={status}
       />
 
@@ -71,7 +94,7 @@ export default function Home() {
         {/* TAB 1: HOME VIEW */}
         {activeTab === 'home' && (
           <>
-            <Hero />
+            <Hero onExploreMarketplace={() => setActiveTab('products')} onListDevice={handleOpenCreateModal} />
 
             {/* Featured Categories Carousel / Strip */}
             {categories.length > 0 && (
@@ -159,7 +182,7 @@ export default function Home() {
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
             onSelectProduct={setSelectedProduct}
-            onOpenCreateModal={() => setIsCreateModalOpen(true)}
+            onOpenCreateModal={handleOpenCreateModal}
           />
         )}
 
@@ -171,7 +194,16 @@ export default function Home() {
           />
         )}
 
-        {/* TAB 4: API STATUS VIEW */}
+        {/* TAB 4: USER PROFILE & SETTINGS VIEW (PROTECTED) */}
+        {activeTab === 'profile' && (
+          <Profile
+            onOpenAuthModal={handleOpenAuthModal}
+            onOpenCreateModal={handleOpenCreateModal}
+            onBackToHome={() => setActiveTab('home')}
+          />
+        )}
+
+        {/* TAB 5: API STATUS VIEW */}
         {activeTab === 'health' && (
           <div style={{ paddingTop: '2rem' }}>
             <HealthCheck
@@ -202,6 +234,17 @@ export default function Home() {
           onCreated={handleProductCreated}
         />
       )}
+
+      {/* Authentication Modal (Sign In / Register) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        initialTab={authModalTab}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={() => {
+          // If the user was on the profile tab or wants to view profile
+          console.log('Authentication successful!');
+        }}
+      />
 
       <Footer />
     </div>

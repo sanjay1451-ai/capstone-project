@@ -82,4 +82,50 @@ public class AuthController {
                     .body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    /**
+     * PUT /api/auth/profile
+     * Update current authenticated user's profile information
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> updateProfile(
+            @Valid @RequestBody com.secondhand.electronics.dto.UserProfileUpdateDTO request
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to update profile"));
+        }
+
+        try {
+            String email = authentication.getName();
+            UserResponseDTO updated = authService.updateProfile(email, request);
+            return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Profile update failed: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/auth/user/{id}
+     * Get public seller/user profile details by user ID
+     */
+    @GetMapping("/user/{id}")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> getUserById(@PathVariable Long id) {
+        try {
+            UserResponseDTO user = authService.getUserById(id);
+            return ResponseEntity.ok(ApiResponse.success("User retrieved successfully", user));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve user: " + e.getMessage()));
+        }
+    }
 }
+

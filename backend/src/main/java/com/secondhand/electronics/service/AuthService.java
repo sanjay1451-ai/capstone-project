@@ -3,6 +3,7 @@ package com.secondhand.electronics.service;
 import com.secondhand.electronics.dto.AuthResponse;
 import com.secondhand.electronics.dto.LoginRequest;
 import com.secondhand.electronics.dto.RegisterRequest;
+import com.secondhand.electronics.dto.UserProfileUpdateDTO;
 import com.secondhand.electronics.dto.UserResponseDTO;
 import com.secondhand.electronics.entity.User;
 import com.secondhand.electronics.repository.UserRepository;
@@ -76,14 +77,15 @@ public class AuthService {
         String email = req.getEmail().trim().toLowerCase();
 
         // Check uniqueness
+        boolean exists = false;
         try {
-            if (userRepository.existsByEmail(email)) {
-                throw new IllegalArgumentException("An account with email '" + email + "' already exists");
-            }
+            exists = userRepository.existsByEmail(email);
         } catch (Exception ignored) {
-            if (fallbackUserCache.containsKey(email)) {
-                throw new IllegalArgumentException("An account with email '" + email + "' already exists");
-            }
+            exists = fallbackUserCache.containsKey(email);
+        }
+
+        if (exists) {
+            throw new IllegalArgumentException("An account with email '" + email + "' already exists");
         }
 
         User user = new User();
@@ -96,12 +98,15 @@ public class AuthService {
         user.setProfileImage("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
         user.setCreatedAt(LocalDateTime.now());
 
-        User savedUser;
+        User savedUser = null;
         try {
             savedUser = userRepository.save(user);
         } catch (Exception ignored) {
+            // DB unreachable
+        }
+
+        if (savedUser == null) {
             user.setId(userIdGen.incrementAndGet());
-            fallbackUserCache.put(email, user);
             savedUser = user;
         }
 
@@ -159,6 +164,73 @@ public class AuthService {
         return mapToUserResponse(user);
     }
 
+    public UserResponseDTO updateProfile(String email, UserProfileUpdateDTO updateDTO) {
+        String cleanEmail = email.trim().toLowerCase();
+        User user = null;
+        try {
+            Optional<User> opt = userRepository.findByEmail(cleanEmail);
+            if (opt.isPresent()) {
+                user = opt.get();
+            }
+        } catch (Exception ignored) {
+            // DB unreachable
+        }
+
+        if (user == null) {
+            user = fallbackUserCache.get(cleanEmail);
+        }
+
+        if (user == null) {
+            throw new IllegalArgumentException("User not found: " + email);
+        }
+
+        user.setName(updateDTO.getName().trim());
+        if (updateDTO.getPhone() != null) {
+            user.setPhone(updateDTO.getPhone().trim());
+        }
+        if (updateDTO.getAddress() != null) {
+            user.setAddress(updateDTO.getAddress().trim());
+        }
+        if (updateDTO.getProfileImage() != null && !updateDTO.getProfileImage().isBlank()) {
+            user.setProfileImage(updateDTO.getProfileImage().trim());
+        }
+
+        User savedUser = user;
+        try {
+            savedUser = userRepository.save(user);
+        } catch (Exception ignored) {
+            // DB unreachable; fallback is updated in-memory
+        }
+
+        fallbackUserCache.put(cleanEmail, savedUser);
+        return mapToUserResponse(savedUser);
+    }
+
+    public UserResponseDTO getUserById(Long id) {
+        User user = null;
+        try {
+            Optional<User> opt = userRepository.findById(id);
+            if (opt.isPresent()) {
+                user = opt.get();
+            }
+        } catch (Exception ignored) {
+            // DB unreachable
+        }
+
+        if (user == null) {
+            user = fallbackUserCache.values().stream()
+                    .filter(u -> u.getId() != null && u.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (user == null) {
+            throw new IllegalArgumentException("User with ID " + id + " not found");
+        }
+
+        return mapToUserResponse(user);
+    }
+
     public UserResponseDTO mapToUserResponse(User user) {
         return new UserResponseDTO(
                 user.getId(),
@@ -172,3 +244,4 @@ public class AuthService {
         );
     }
 }
+

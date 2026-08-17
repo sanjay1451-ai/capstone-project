@@ -64,6 +64,40 @@ export const authService = {
   },
 
   /**
+   * Update current authenticated user profile
+   * @param {{name: string, phone?: string, address?: string, profileImage?: string}} data
+   * @returns {Promise<Object>}
+   */
+  async updateProfile(data) {
+    try {
+      const response = await api.put('/api/auth/profile', data);
+      const user = response.data?.data;
+      if (user) {
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+      }
+      return user;
+    } catch (error) {
+      console.error('[AuthService] Update profile error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get public profile for a user/seller by ID
+   * @param {number|string} id 
+   * @returns {Promise<Object>}
+   */
+  async getUserById(id) {
+    try {
+      const response = await api.get(`/api/auth/user/${id}`);
+      return response.data?.data;
+    } catch (error) {
+      console.error('[AuthService] Get user by ID error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Logout user and clear stored tokens
    */
   logout() {
@@ -90,5 +124,14 @@ export const authService = {
     } catch {
       return null;
     }
+  },
+
+  /**
+   * Check if token exists
+   * @returns {boolean}
+   */
+  isAuthenticated() {
+    return !!localStorage.getItem(TOKEN_KEY);
   }
 };
+

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Image as ImageIcon, Tag, Check, AlertCircle } from 'lucide-react';
 import { productService } from '../../services/productService';
+import { useAuth } from '../../context/AuthContext';
 import './CreateProductModal.css';
 
 export default function CreateProductModal({ categories = [], onClose, onCreated }) {
+  const { user, isAuthenticated } = useAuth();
+
   const [formData, setFormData] = useState({
     title: '',
     category: categories[0]?.name || 'Smartphones',
@@ -12,11 +15,21 @@ export default function CreateProductModal({ categories = [], onClose, onCreated
     condition: 'EXCELLENT',
     price: '',
     originalPrice: '',
-    location: '',
+    location: user?.address || 'San Francisco, CA',
     description: '',
     imageUrl: '',
-    sellerId: 1
+    sellerId: user?.id || 1
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        sellerId: user.id || 1,
+        location: prev.location || user.address || 'San Francisco, CA'
+      }));
+    }
+  }, [user]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

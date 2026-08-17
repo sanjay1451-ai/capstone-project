@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, ShieldCheck, MapPin, Tag, ArrowLeftRight, ShoppingBag, Heart, Check, Leaf, UserCheck, Phone, Mail, Star, MessageSquare, Send, AlertCircle, Calendar, MessageCircle } from 'lucide-react';
+import { X, ShieldCheck, MapPin, Tag, ArrowLeftRight, ShoppingBag, Heart, Check, Leaf, UserCheck, Phone, Mail, Star, MessageSquare, Send, AlertCircle, Calendar, MessageCircle, Flag } from 'lucide-react';
 import { reviewService } from '../../services/reviewService';
 import { favoriteService } from '../../services/favoriteService';
 import { useAuth } from '../../context/AuthContext';
 import ContactSellerModal from '../ContactSellerModal/ContactSellerModal';
+import ReportModal from '../ReportModal/ReportModal';
 import './ProductDetailsModal.css';
 
 export default function ProductDetailsModal({
@@ -49,6 +50,7 @@ export default function ProductDetailsModal({
   const [ratingSummary, setRatingSummary] = useState({ averageRating: 5.0, totalReviews: 0 });
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Review Form States
   const [newRating, setNewRating] = useState(5);
@@ -338,10 +340,26 @@ export default function ProductDetailsModal({
                 </button>
               </div>
 
-              {/* Verified Recommerce Guarantee */}
+              {/* Verified Recommerce Guarantee & Report Link */}
               <div className="guarantee-strip">
-                <ShieldCheck size={16} className="text-emerald-400" />
-                <span>30-Day VoltTrade Buyer Protection & Anti-Fraud Guarantee</span>
+                <div className="guarantee-left">
+                  <ShieldCheck size={16} className="text-emerald-400" />
+                  <span>30-Day VoltTrade Buyer Protection & Anti-Fraud Guarantee</span>
+                </div>
+                <button
+                  className="report-listing-btn"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      if (onOpenAuthModal) onOpenAuthModal('login');
+                      return;
+                    }
+                    setIsReportModalOpen(true);
+                  }}
+                  title="Flag suspicious or inappropriate listing"
+                >
+                  <Flag size={13} />
+                  <span>Report</span>
+                </button>
               </div>
 
               {/* ================= REVIEWS SECTION ================= */}
@@ -466,6 +484,14 @@ export default function ProductDetailsModal({
               onNavigateToMessages(recipient);
             }
           }}
+        />
+      )}
+
+      {/* Report Modal */}
+      {isReportModalOpen && (
+        <ReportModal
+          product={product}
+          onClose={() => setIsReportModalOpen(false)}
         />
       )}
     </>

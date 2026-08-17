@@ -16,6 +16,7 @@ import Categories from '../Categories/Categories';
 import Dashboard from '../Dashboard/Dashboard';
 import Profile from '../Profile/Profile';
 import Messages from '../Messages/Messages';
+import AdminDashboard from '../AdminDashboard/AdminDashboard';
 import Sell from '../Sell/Sell';
 import { useAuth } from '../../context/AuthContext';
 import { useHealthCheck } from '../../hooks/useHealthCheck';
@@ -24,7 +25,7 @@ import { categoryService } from '../../services/categoryService';
 import './Home.css';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'sell' | 'dashboard' | 'profile' | 'messages' | 'health'
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'sell' | 'dashboard' | 'profile' | 'messages' | 'admin' | 'health'
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -270,7 +271,15 @@ export default function Home() {
           />
         )}
 
-        {/* TAB 8: API STATUS VIEW */}
+        {/* TAB 8: ADMIN SECURITY & MODERATION CONSOLE */}
+        {activeTab === 'admin' && (
+          <AdminDashboard
+            onSelectProduct={setSelectedProduct}
+            onOpenAuthModal={handleOpenAuthModal}
+          />
+        )}
+
+        {/* TAB 9: API STATUS VIEW */}
         {activeTab === 'health' && (
           <div style={{ paddingTop: '2rem' }}>
             <HealthCheck

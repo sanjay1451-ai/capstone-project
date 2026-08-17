@@ -92,6 +92,15 @@ export default function Navbar({
               {unreadMessagesCount > 0 && <span className="nav-unread-badge">{unreadMessagesCount}</span>}
             </button>
           )}
+          {isAuthenticated && user?.role === 'ROLE_ADMIN' && (
+            <button 
+              className={`nav-link-btn admin-nav-btn ${activeTab === 'admin' ? 'active' : ''}`}
+              onClick={() => onSelectTab('admin')}
+            >
+              <Shield size={16} className="text-danger" />
+              <span>Admin Console</span>
+            </button>
+          )}
           {isAuthenticated && (
             <button 
               className={`nav-link-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
@@ -182,6 +191,15 @@ export default function Navbar({
                   </div>
 
                   <div className="user-menu-items">
+                    {user?.role === 'ROLE_ADMIN' && (
+                      <button
+                        className={`menu-item-btn admin-menu-item ${activeTab === 'admin' ? 'item-active' : ''}`}
+                        onClick={() => handleTabClick('admin')}
+                      >
+                        <Shield size={16} className="text-danger" />
+                        <span>Admin Console & Moderation</span>
+                      </button>
+                    )}
                     <button
                       className={`menu-item-btn ${activeTab === 'dashboard' ? 'item-active' : ''}`}
                       onClick={() => handleTabClick('dashboard')}

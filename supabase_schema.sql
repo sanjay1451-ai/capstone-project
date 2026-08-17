@@ -104,6 +104,17 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
+-- 10. REPORTS TABLE (PRODUCT FLAGGING & MODERATION)
+CREATE TABLE IF NOT EXISTS reports (
+    id BIGSERIAL PRIMARY KEY,
+    reporter_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    reason VARCHAR(50) NOT NULL, -- 'FAKE_PRODUCT', 'SCAM', 'INCORRECT_INFO', 'INAPPROPRIATE_CONTENT'
+    details TEXT,
+    status VARCHAR(20) DEFAULT 'PENDING' NOT NULL, -- 'PENDING', 'RESOLVED', 'DISMISSED'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
 -- ===================================================================
 -- INDEXES FOR HIGH PERFORMANCE QUERYING
 -- ===================================================================
@@ -123,6 +134,8 @@ CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
 CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_reports_product ON reports(product_id);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 
 -- ===================================================================
 -- SEED DATA (INITIAL CATEGORIES & DEMO USER)
@@ -137,8 +150,9 @@ INSERT INTO categories (name, description) VALUES
     ('Cameras & Optics', 'DSLRs, mirrorless cameras, lenses, and creator gear.')
 ON CONFLICT (name) DO NOTHING;
 
--- Demo seller user for initial product listings
+-- Demo seller user for initial product listings & Admin account
 INSERT INTO users (id, name, email, password, phone, address, profile_image, role) VALUES
     (1, 'Alex Rivers', 'alex.rivers@example.com', '$2a$10$eO1v00n..P4zP039c2tOFe769d45e523fbb5465c4013ba0c0906', '+1-555-0192', '124 Tech Boulevard, San Francisco, CA', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', 'ROLE_USER'),
-    (2, 'EcoTrade Electronics', 'store@ecotrade.com', '$2a$10$eO1v00n..P4zP039c2tOFe769d45e523fbb5465c4013ba0c0906', '+1-555-0144', '500 Green Way, Seattle, WA', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', 'ROLE_USER')
+    (2, 'EcoTrade Electronics', 'store@ecotrade.com', '$2a$10$eO1v00n..P4zP039c2tOFe769d45e523fbb5465c4013ba0c0906', '+1-555-0144', '500 Green Way, Seattle, WA', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', 'ROLE_USER'),
+    (3, 'VoltTrade Admin', 'admin@volttrade.com', '$2a$10$eO1v00n..P4zP039c2tOFe769d45e523fbb5465c4013ba0c0906', '+1-555-0100', '100 Security HQ, New York, NY', 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150', 'ROLE_ADMIN')
 ON CONFLICT (email) DO NOTHING;

@@ -423,6 +423,7 @@
 .guarantee-strip {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -430,6 +431,33 @@
   padding: 0.4rem 0.75rem;
   background: rgba(15, 23, 42, 0.4);
   border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+
+.guarantee-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.report-listing-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.report-listing-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
 }
 
 /* Reviews Section */

@@ -96,7 +96,13 @@ export default function Dashboard({
 
   const handleUpdateExchangeStatus = async (exchangeId, newStatus) => {
     try {
-      await exchangeService.updateStatus(exchangeId, newStatus);
+      if (newStatus === 'ACCEPTED') {
+        await exchangeService.acceptExchange(exchangeId);
+      } else if (newStatus === 'REJECTED') {
+        await exchangeService.rejectExchange(exchangeId);
+      } else {
+        await exchangeService.updateStatus(exchangeId, newStatus);
+      }
       setActionFeedback({ state: 'success', message: `Trade proposal marked as ${newStatus}` });
       loadDashboardData();
       setTimeout(() => setActionFeedback({ state: 'idle', message: '' }), 3500);

@@ -32,6 +32,48 @@ public class FavoriteService {
         this.authService = authService;
     }
 
+    public Map<String, Object> addFavorite(String userEmail, Long productId) {
+        var userDto = authService.getCurrentUser(userEmail);
+        Long userId = userDto.getId();
+        String cacheKey = userId + ":" + productId;
+
+        try {
+            Optional<Favorite> existing = favoriteRepository.findByUserIdAndProductId(userId, productId);
+            if (existing.isEmpty()) {
+                Favorite fav = new Favorite();
+                fav.setUserId(userId);
+                fav.setProductId(productId);
+                fav.setCreatedAt(LocalDateTime.now());
+                favoriteRepository.save(fav);
+            }
+        } catch (Exception ignored) {}
+        fallbackUserFavorites.add(cacheKey);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("productId", productId);
+        res.put("isFavorite", true);
+        res.put("message", "Product added to favorites");
+        return res;
+    }
+
+    public Map<String, Object> removeFavorite(String userEmail, Long productId) {
+        var userDto = authService.getCurrentUser(userEmail);
+        Long userId = userDto.getId();
+        String cacheKey = userId + ":" + productId;
+
+        try {
+            Optional<Favorite> existing = favoriteRepository.findByUserIdAndProductId(userId, productId);
+            existing.ifPresent(favoriteRepository::delete);
+        } catch (Exception ignored) {}
+        fallbackUserFavorites.remove(cacheKey);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("productId", productId);
+        res.put("isFavorite", false);
+        res.put("message", "Product removed from favorites");
+        return res;
+    }
+
     public Map<String, Object> toggleFavorite(String userEmail, Long productId) {
         var userDto = authService.getCurrentUser(userEmail);
         Long userId = userDto.getId();

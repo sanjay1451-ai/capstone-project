@@ -97,4 +97,41 @@ class FavoriteServiceTest {
         assertEquals(false, result.get("isFavorite"));
         assertEquals("Removed from wishlist", result.get("message"));
     }
+
+    @Test
+    @DisplayName("Should add item explicitly to favorites")
+    void testAddFavoriteExplicit() {
+        User user = new User("User One", "user1@example.com", "hash", "123", "Main St", null, "ROLE_USER");
+        user.setId(10L);
+
+        when(userRepository.findByEmail("user1@example.com")).thenReturn(Optional.of(user));
+        when(favoriteRepository.findByUserIdAndProductId(10L, 55L)).thenReturn(Optional.empty());
+
+        Map<String, Object> result = favoriteService.addFavorite("user1@example.com", 55L);
+
+        assertNotNull(result);
+        assertEquals(55L, result.get("productId"));
+        assertEquals(true, result.get("isFavorite"));
+    }
+
+    @Test
+    @DisplayName("Should remove item explicitly from favorites")
+    void testRemoveFavoriteExplicit() {
+        User user = new User("User One", "user1@example.com", "hash", "123", "Main St", null, "ROLE_USER");
+        user.setId(10L);
+
+        Favorite fav = new Favorite();
+        fav.setId(2L);
+        fav.setUserId(10L);
+        fav.setProductId(55L);
+
+        when(userRepository.findByEmail("user1@example.com")).thenReturn(Optional.of(user));
+        when(favoriteRepository.findByUserIdAndProductId(10L, 55L)).thenReturn(Optional.of(fav));
+
+        Map<String, Object> result = favoriteService.removeFavorite("user1@example.com", 55L);
+
+        assertNotNull(result);
+        assertEquals(55L, result.get("productId"));
+        assertEquals(false, result.get("isFavorite"));
+    }
 }

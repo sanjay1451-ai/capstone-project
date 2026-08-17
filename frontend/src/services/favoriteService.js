@@ -2,6 +2,36 @@ import api from './api';
 
 export const favoriteService = {
   /**
+   * Add a product to user's favorites
+   * @param {number} productId 
+   * @returns {Promise<Object>}
+   */
+  async addFavorite(productId) {
+    try {
+      const response = await api.post('/api/favorites', { productId });
+      return response.data?.data;
+    } catch (error) {
+      console.error('[FavoriteService] Add favorite error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Remove a product from user's favorites
+   * @param {number} productId 
+   * @returns {Promise<Object>}
+   */
+  async removeFavorite(productId) {
+    try {
+      const response = await api.delete(`/api/favorites/${productId}`);
+      return response.data?.data;
+    } catch (error) {
+      console.error('[FavoriteService] Remove favorite error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Toggle a product in user's favorites
    * @param {number} productId 
    * @returns {Promise<{productId: number, isFavorite: boolean, message: string}>}

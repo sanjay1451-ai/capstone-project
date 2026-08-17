@@ -1,31 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { X, RefreshCw, ArrowRightLeft, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, RefreshCw, ArrowRightLeft, ShieldCheck, CheckCircle2, AlertCircle, PlusCircle } from 'lucide-react';
 import { exchangeService } from '../../services/exchangeService';
 import { productService } from '../../services/productService';
 import { useAuth } from '../../context/AuthContext';
 import './ExchangeModal.css';
 
-export default function ExchangeModal({ targetProduct, onClose, onExchangeProposed }) {
-  const { user } = useAuth();
+export default function ExchangeModal({ targetProduct, onClose, onExchangeProposed, onOpenCreateModal }) {
+  const { user, isAuthenticated } = useAuth();
   const [userProducts, setUserProducts] = useState([]);
   const [selectedOfferedId, setSelectedOfferedId] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [loadingInventory, setLoadingInventory] = useState(true);
 
   useEffect(() => {
-    productService.getProducts()
-      .then((items) => {
-        // Filter products not equal to target product
-        const eligible = items.filter(p => p.id !== targetProduct?.id);
-        setUserProducts(eligible);
-        if (eligible.length > 0) {
-          setSelectedOfferedId(eligible[0].id);
+    async function loadUserInventory() {
+      setLoadingInventory(true);
+      try {
+        let items = [];
+        if (isAuthenticated) {
+          try {
+            items = await productService.getMyListings();
+          } catch (e) {
+            console.log('Error fetching my listings for exchange, falling back to catalog:', e);
+          }
         }
-      })
-      .catch((err) => console.log('Error loading products for exchange:', err));
-  }, [targetProduct]);
+        
+        if (!items || items.length === 0) {
+          const catalog = await productService.getProducts();
+          items = catalog.filter(p => p.id !== targetProduct?.id);
+        } else {
+          items = items.filter(p => p.id !== targetProduct?.id && p.status !== 'SOLD' && p.status !== 'EXCHANGED');
+        }
+
+        setUserProducts(items);
+        if (items.length > 0) {
+          setSelectedOfferedId(items[0].id);
+        }
+      } catch (err) {
+        console.error('Error loading products for exchange:', err);
+      } finally {
+        setLoadingInventory(false);
+      }
+    }
+
+    loadUserInventory();
+  }, [targetProduct, isAuthenticated]);
 
   if (!targetProduct) return null;
 
@@ -34,7 +56,7 @@ export default function ExchangeModal({ targetProduct, onClose, onExchangePropos
     setError('');
 
     if (!selectedOfferedId) {
-      setError('Please select a device to offer in exchange.');
+      setError('Please select a device from your listings to offer in exchange.');
       return;
     }
 
@@ -134,20 +156,41 @@ export default function ExchangeModal({ targetProduct, onClose, onExchangePropos
 
             {/* Select Offered Device */}
             <div className="form-group">
-              <label className="form-label" htmlFor="offered-device-select">Select Device from Inventory to Trade *</label>
-              <select
-                id="offered-device-select"
-                className="form-select"
-                value={selectedOfferedId}
-                onChange={(e) => setSelectedOfferedId(e.target.value)}
-                required
-              >
-                {userProducts.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title} (${parseFloat(p.price || 0).toFixed(2)} - {p.condition})
-                  </option>
-                ))}
-              </select>
+              <label className="form-label" htmlFor="offered-device-select">Select Device from Your Listings to Trade *</label>
+              {loadingInventory ? (
+                <p className="loading-inventory-note">Loading your listed inventory...</p>
+              ) : userProducts.length === 0 ? (
+                <div className="no-listings-prompt glass-card">
+                  <p>You don't have any active devices listed to offer for trade.</p>
+                  {onOpenCreateModal && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        onClose();
+                        onOpenCreateModal();
+                      }}
+                    >
+                      <PlusCircle size={14} />
+                      <span>List a Device First</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <select
+                  id="offered-device-select"
+                  className="form-select"
+                  value={selectedOfferedId}
+                  onChange={(e) => setSelectedOfferedId(e.target.value)}
+                  required
+                >
+                  {userProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title} (${parseFloat(p.price || 0).toFixed(2)} - {p.condition?.replace('_', ' ')})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Negotiation Message */}
@@ -168,7 +211,7 @@ export default function ExchangeModal({ targetProduct, onClose, onExchangePropos
               <button type="button" className="btn btn-secondary" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+              <button type="submit" className="btn btn-primary" disabled={isSubmitting || userProducts.length === 0}>
                 {isSubmitting ? (
                   <span className="spinner-sm"></span>
                 ) : (

@@ -51,6 +51,10 @@ public class ExchangeRequestService {
             throw new IllegalArgumentException("You cannot propose an exchange for your own product.");
         }
 
+        if (offeredProduct.getSellerId() != null && !offeredProduct.getSellerId().equals(requesterId)) {
+            throw new IllegalArgumentException("You can only offer products that you own.");
+        }
+
         ExchangeRequest exchange = new ExchangeRequest();
         exchange.setRequesterId(requesterId);
         exchange.setProductId(request.getProductId());
@@ -138,8 +142,17 @@ public class ExchangeRequestService {
                 .collect(Collectors.toList());
     }
 
+    public ExchangeResponseDTO acceptExchange(String userEmail, Long exchangeId) {
+        return updateStatus(userEmail, exchangeId, "ACCEPTED");
+    }
+
+    public ExchangeResponseDTO rejectExchange(String userEmail, Long exchangeId) {
+        return updateStatus(userEmail, exchangeId, "REJECTED");
+    }
+
     public ExchangeResponseDTO updateStatus(String userEmail, Long exchangeId, String status) {
         var userDto = authService.getCurrentUser(userEmail);
+        Long currentUserId = userDto.getId();
 
         ExchangeRequest exchange = null;
         try {
@@ -154,6 +167,14 @@ public class ExchangeRequestService {
             throw new IllegalArgumentException("Exchange request with ID " + exchangeId + " not found");
         }
 
+        ProductResponseDTO target = productService.getProductById(exchange.getProductId()).orElse(null);
+        if (target != null && target.getSellerId() != null && !target.getSellerId().equals(currentUserId)) {
+            // Check if user is requester cancelling
+            if (!exchange.getRequesterId().equals(currentUserId)) {
+                throw new IllegalArgumentException("You are not authorized to respond to this exchange proposal.");
+            }
+        }
+
         exchange.setStatus(status.toUpperCase());
 
         ExchangeRequest saved = exchange;
@@ -163,7 +184,6 @@ public class ExchangeRequestService {
 
         fallbackExchanges.put(saved.getId(), saved);
 
-        ProductResponseDTO target = productService.getProductById(saved.getProductId()).orElse(null);
         ProductResponseDTO offered = productService.getProductById(saved.getOfferedProductId()).orElse(null);
         
         String senderName = "Trader";

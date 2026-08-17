@@ -97,6 +97,56 @@ public class ExchangeRequestController {
     }
 
     /**
+     * PUT /api/exchanges/{id}/accept
+     * Accept a received exchange proposal
+     */
+    @PutMapping("/{id}/accept")
+    public ResponseEntity<ApiResponse<ExchangeResponseDTO>> acceptExchange(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to accept exchange proposal"));
+        }
+
+        try {
+            String userEmail = auth.getName();
+            ExchangeResponseDTO updated = exchangeService.acceptExchange(userEmail, id);
+            return ResponseEntity.ok(ApiResponse.success("Exchange proposal accepted!", updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to accept exchange: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * PUT /api/exchanges/{id}/reject
+     * Reject a received exchange proposal
+     */
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<ExchangeResponseDTO>> rejectExchange(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to reject exchange proposal"));
+        }
+
+        try {
+            String userEmail = auth.getName();
+            ExchangeResponseDTO updated = exchangeService.rejectExchange(userEmail, id);
+            return ResponseEntity.ok(ApiResponse.success("Exchange proposal rejected", updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to reject exchange: " + e.getMessage()));
+        }
+    }
+
+    /**
      * PUT /api/exchanges/{id}/status
      * Update exchange proposal status (ACCEPTED, REJECTED, CANCELLED)
      */

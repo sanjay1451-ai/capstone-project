@@ -23,6 +23,35 @@ public class FavoriteController {
     }
 
     /**
+     * POST /api/favorites
+     * Add or toggle favorite from request body
+     */
+    @PostMapping
+    public ResponseEntity<ApiResponse<Map<String, Object>>> addFavoriteBody(@RequestBody Map<String, Object> body) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to save items to wishlist"));
+        }
+
+        Object pIdObj = body.get("productId");
+        if (pIdObj == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("productId is required"));
+        }
+
+        try {
+            Long productId = Long.parseLong(pIdObj.toString());
+            String userEmail = auth.getName();
+            Map<String, Object> result = favoriteService.addFavorite(userEmail, productId);
+            return ResponseEntity.ok(ApiResponse.success((String) result.get("message"), result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to add favorite: " + e.getMessage()));
+        }
+    }
+
+    /**
      * POST /api/favorites/{productId}
      * Toggle saving a product to user's favorites / wishlist
      */
@@ -41,6 +70,28 @@ public class FavoriteController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to update wishlist: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * DELETE /api/favorites/{productId}
+     * Remove product from user's favorites / wishlist
+     */
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> removeFavorite(@PathVariable Long productId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized: Please sign in to modify wishlist"));
+        }
+
+        try {
+            String userEmail = auth.getName();
+            Map<String, Object> result = favoriteService.removeFavorite(userEmail, productId);
+            return ResponseEntity.ok(ApiResponse.success((String) result.get("message"), result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to remove favorite: " + e.getMessage()));
         }
     }
 

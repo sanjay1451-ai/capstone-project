@@ -132,4 +132,112 @@ class ExchangeRequestServiceTest {
                 () -> exchangeRequestService.createExchangeRequest("requester@example.com", req));
         assertTrue(ex.getMessage().contains("cannot propose an exchange for your own product"));
     }
+
+    @Test
+    @DisplayName("Should reject exchange when offering an item not owned by requester")
+    void testCreateExchangeUnownedOfferedItemRejected() {
+        User requester = new User("Requester User", "requester@example.com", "hash", "123", "Main St", null, "ROLE_USER");
+        requester.setId(20L);
+
+        when(userRepository.findByEmail("requester@example.com")).thenReturn(Optional.of(requester));
+
+        ProductDTO p1 = new ProductDTO();
+        p1.setSellerId(5L);
+        p1.setTitle("MacBook Pro M2");
+        p1.setCategory("Laptops");
+        p1.setCondition("LIKE_NEW");
+        p1.setPrice(new BigDecimal("1299.00"));
+        var targetProduct = productService.createProduct(p1);
+
+        ProductDTO p2 = new ProductDTO();
+        p2.setSellerId(99L); // stranger owns this device
+        p2.setTitle("iPad Pro 12.9");
+        p2.setCategory("Tablets");
+        p2.setCondition("EXCELLENT");
+        p2.setPrice(new BigDecimal("799.00"));
+        var offeredProduct = productService.createProduct(p2);
+
+        CreateExchangeRequestDTO req = new CreateExchangeRequestDTO(targetProduct.getId(), offeredProduct.getId(), "Swap");
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> exchangeRequestService.createExchangeRequest("requester@example.com", req));
+        assertTrue(ex.getMessage().contains("only offer products that you own"));
+    }
+
+    @Test
+    @DisplayName("Should accept exchange proposal")
+    void testAcceptExchangeSuccess() {
+        User seller = new User("Seller User", "seller@example.com", "hash", "123", "Main St", null, "ROLE_USER");
+        seller.setId(5L);
+
+        when(userRepository.findByEmail("seller@example.com")).thenReturn(Optional.of(seller));
+
+        ProductDTO p1 = new ProductDTO();
+        p1.setSellerId(5L);
+        p1.setTitle("MacBook Pro M2");
+        p1.setCategory("Laptops");
+        p1.setCondition("LIKE_NEW");
+        p1.setPrice(new BigDecimal("1299.00"));
+        var targetProduct = productService.createProduct(p1);
+
+        ProductDTO p2 = new ProductDTO();
+        p2.setSellerId(20L);
+        p2.setTitle("iPad Pro 12.9");
+        p2.setCategory("Tablets");
+        p2.setCondition("EXCELLENT");
+        p2.setPrice(new BigDecimal("799.00"));
+        var offeredProduct = productService.createProduct(p2);
+
+        ExchangeRequest ex = new ExchangeRequest();
+        ex.setId(401L);
+        ex.setRequesterId(20L);
+        ex.setProductId(targetProduct.getId());
+        ex.setOfferedProductId(offeredProduct.getId());
+        ex.setStatus("PENDING");
+
+        when(exchangeRequestRepository.findById(401L)).thenReturn(Optional.of(ex));
+        when(exchangeRequestRepository.save(any(ExchangeRequest.class))).thenAnswer(i -> i.getArgument(0));
+
+        ExchangeResponseDTO res = exchangeRequestService.acceptExchange("seller@example.com", 401L);
+        assertNotNull(res);
+        assertEquals("ACCEPTED", res.getStatus());
+    }
+
+    @Test
+    @DisplayName("Should reject exchange proposal")
+    void testRejectExchangeSuccess() {
+        User seller = new User("Seller User", "seller@example.com", "hash", "123", "Main St", null, "ROLE_USER");
+        seller.setId(5L);
+
+        when(userRepository.findByEmail("seller@example.com")).thenReturn(Optional.of(seller));
+
+        ProductDTO p1 = new ProductDTO();
+        p1.setSellerId(5L);
+        p1.setTitle("MacBook Pro M2");
+        p1.setCategory("Laptops");
+        p1.setCondition("LIKE_NEW");
+        p1.setPrice(new BigDecimal("1299.00"));
+        var targetProduct = productService.createProduct(p1);
+
+        ProductDTO p2 = new ProductDTO();
+        p2.setSellerId(20L);
+        p2.setTitle("iPad Pro 12.9");
+        p2.setCategory("Tablets");
+        p2.setCondition("EXCELLENT");
+        p2.setPrice(new BigDecimal("799.00"));
+        var offeredProduct = productService.createProduct(p2);
+
+        ExchangeRequest ex = new ExchangeRequest();
+        ex.setId(402L);
+        ex.setRequesterId(20L);
+        ex.setProductId(targetProduct.getId());
+        ex.setOfferedProductId(offeredProduct.getId());
+        ex.setStatus("PENDING");
+
+        when(exchangeRequestRepository.findById(402L)).thenReturn(Optional.of(ex));
+        when(exchangeRequestRepository.save(any(ExchangeRequest.class))).thenAnswer(i -> i.getArgument(0));
+
+        ExchangeResponseDTO res = exchangeRequestService.rejectExchange("seller@example.com", 402L);
+        assertNotNull(res);
+        assertEquals("REJECTED", res.getStatus());
+    }
 }

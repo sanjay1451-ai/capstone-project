@@ -45,6 +45,36 @@ export const exchangeService = {
   },
 
   /**
+   * Accept an exchange proposal
+   * @param {number} exchangeId 
+   * @returns {Promise<Object>}
+   */
+  async acceptExchange(exchangeId) {
+    try {
+      const response = await api.put(`/api/exchanges/${exchangeId}/accept`);
+      return response.data?.data;
+    } catch (error) {
+      console.error('[ExchangeService] Accept exchange error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reject an exchange proposal
+   * @param {number} exchangeId 
+   * @returns {Promise<Object>}
+   */
+  async rejectExchange(exchangeId) {
+    try {
+      const response = await api.put(`/api/exchanges/${exchangeId}/reject`);
+      return response.data?.data;
+    } catch (error) {
+      console.error('[ExchangeService] Reject exchange error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Update exchange status (ACCEPTED, REJECTED, CANCELLED)
    * @param {number} exchangeId 
    * @param {string} status 

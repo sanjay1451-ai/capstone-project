@@ -103,4 +103,37 @@ class ReviewServiceTest {
         assertTrue(summary.containsKey("averageRating"));
         assertTrue(summary.containsKey("totalReviews"));
     }
+
+    @Test
+    @DisplayName("Should reject duplicate review by same user on same product")
+    void testDuplicateReviewRejected() {
+        User user = new User("Reviewer User", "reviewer@example.com", "hash", "123", "Main St", null, "ROLE_USER");
+        user.setId(15L);
+
+        when(userRepository.findByEmail("reviewer@example.com")).thenReturn(Optional.of(user));
+
+        ProductDTO p = new ProductDTO();
+        p.setSellerId(5L);
+        p.setTitle("Sony WH-1000XM5");
+        p.setCategory("Audio");
+        p.setCondition("LIKE_NEW");
+        p.setPrice(new BigDecimal("279.00"));
+        var createdProduct = productService.createProduct(p);
+        Long productId = createdProduct.getId();
+
+        when(reviewRepository.save(any(Review.class))).thenAnswer(i -> {
+            Review r = i.getArgument(0);
+            r.setId(401L);
+            return r;
+        });
+
+        CreateReviewRequest req = new CreateReviewRequest(5, "First review!");
+        reviewService.addReview("reviewer@example.com", productId, req);
+
+        // Second review on same product should throw exception
+        CreateReviewRequest req2 = new CreateReviewRequest(4, "Second review attempt!");
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> reviewService.addReview("reviewer@example.com", productId, req2));
+        assertTrue(ex.getMessage().contains("already reviewed"));
+    }
 }

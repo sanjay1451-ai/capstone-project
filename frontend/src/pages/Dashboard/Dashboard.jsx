@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, ArrowRightLeft, Heart, User, CheckCircle2, Clock, Truck, Package, XCircle, AlertCircle, RefreshCw, Eye, Tag, Trash2, ArrowLeft, Edit, Plus, Sparkles, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, ArrowRightLeft, Heart, User, CheckCircle2, Clock, Truck, Package, XCircle, AlertCircle, RefreshCw, Eye, Tag, Trash2, ArrowLeft, Edit, Plus, Sparkles, AlertTriangle, Star, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../services/orderService';
 import { exchangeService } from '../../services/exchangeService';
 import { favoriteService } from '../../services/favoriteService';
 import { productService } from '../../services/productService';
+import { reviewService } from '../../services/reviewService';
 import Profile from '../Profile/Profile';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import './Dashboard.css';
@@ -18,7 +19,7 @@ export default function Dashboard({
   onBackToHome
 }) {
   const { user, isAuthenticated } = useAuth();
-  const [currentTab, setCurrentTab] = useState(initialTab); // 'listings' | 'purchases' | 'sales' | 'exchanges' | 'wishlist' | 'profile'
+  const [currentTab, setCurrentTab] = useState(initialTab); // 'listings' | 'purchases' | 'sales' | 'exchanges' | 'wishlist' | 'reviews' | 'profile'
 
   // Data states
   const [myListings, setMyListings] = useState([]);
@@ -27,6 +28,8 @@ export default function Dashboard({
   const [sentExchanges, setSentExchanges] = useState([]);
   const [receivedExchanges, setReceivedExchanges] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
+  const [sellerReviews, setSellerReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionFeedback, setActionFeedback] = useState({ state: 'idle', message: '' });
 
@@ -42,13 +45,15 @@ export default function Dashboard({
 
     setLoading(true);
     try {
-      const [listingsData, myOrdersData, mySalesData, sentExData, recExData, favsData] = await Promise.allSettled([
+      const [listingsData, myOrdersData, mySalesData, sentExData, recExData, favsData, myRevData, sellerRevData] = await Promise.allSettled([
         productService.getMyListings(),
         orderService.getMyOrders(),
         orderService.getSellerOrders(),
         exchangeService.getSentExchanges(),
         exchangeService.getReceivedExchanges(),
-        favoriteService.getMyFavorites()
+        favoriteService.getMyFavorites(),
+        reviewService.getMyReviews(),
+        user?.id ? reviewService.getSellerReviews(user.id) : Promise.resolve([])
       ]);
 
       if (listingsData.status === 'fulfilled') setMyListings(listingsData.value);
@@ -57,6 +62,8 @@ export default function Dashboard({
       if (sentExData.status === 'fulfilled') setSentExchanges(sentExData.value);
       if (recExData.status === 'fulfilled') setReceivedExchanges(recExData.value);
       if (favsData.status === 'fulfilled') setFavorites(favsData.value);
+      if (myRevData.status === 'fulfilled') setMyReviews(myRevData.value);
+      if (sellerRevData.status === 'fulfilled') setSellerReviews(sellerRevData.value);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     } finally {
@@ -239,6 +246,17 @@ export default function Dashboard({
           <Heart size={17} />
           <span>Wishlist</span>
           {favorites.length > 0 && <span className="tab-counter">{favorites.length}</span>}
+        </button>
+
+        <button
+          className={`dash-tab-btn ${currentTab === 'reviews' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('reviews')}
+        >
+          <Star size={17} />
+          <span>Reviews & Ratings</span>
+          {(myReviews.length + sellerReviews.length) > 0 && (
+            <span className="tab-counter">{myReviews.length + sellerReviews.length}</span>
+          )}
         </button>
 
         <button
@@ -650,7 +668,79 @@ export default function Dashboard({
         </div>
       )}
 
-      {/* ================= TAB 5: PROFILE ================= */}
+      {/* ================= TAB 5: REVIEWS & RATINGS ================= */}
+      {currentTab === 'reviews' && (
+        <div className="dashboard-tab-content">
+          <div className="dash-section-header">
+            <h3>Verified Reviews & Trader Reputation</h3>
+            <span className="text-muted">{myReviews.length} submitted &bull; {sellerReviews.length} received</span>
+          </div>
+
+          <div className="exchange-subsections-grid">
+            {/* Reviews Written by Current User */}
+            <div className="exchange-column">
+              <h4 className="column-title">Reviews Written by You ({myReviews.length})</h4>
+              {myReviews.length === 0 ? (
+                <div className="dash-empty-card glass-card compact">
+                  <Star size={32} className="text-muted" />
+                  <p>You haven't written any product reviews yet.</p>
+                </div>
+              ) : (
+                myReviews.map(rev => (
+                  <div key={rev.id} className="exchange-card glass-card">
+                    <div className="ex-card-header">
+                      <span className="ex-from">Product: {rev.productTitle}</span>
+                      <div className="stars-cluster small">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star key={s} size={12} className={s <= rev.rating ? 'star-filled' : 'star-empty'} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ex-message-box">
+                      <p>"{rev.comment}"</p>
+                    </div>
+                    <span className="my-listing-date">
+                      {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Reviews Received on Current User's Listings */}
+            <div className="exchange-column">
+              <h4 className="column-title">Feedback Received on Your Listings ({sellerReviews.length})</h4>
+              {sellerReviews.length === 0 ? (
+                <div className="dash-empty-card glass-card compact">
+                  <Star size={32} className="text-muted" />
+                  <p>No customer reviews received yet on your sold devices.</p>
+                </div>
+              ) : (
+                sellerReviews.map(rev => (
+                  <div key={rev.id} className="exchange-card glass-card">
+                    <div className="ex-card-header">
+                      <span className="ex-from">From: {rev.reviewerName}</span>
+                      <div className="stars-cluster small">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star key={s} size={12} className={s <= rev.rating ? 'star-filled' : 'star-empty'} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ex-message-box">
+                      <p>"{rev.comment}"</p>
+                    </div>
+                    <span className="my-listing-date">
+                      Device: {rev.productTitle} &bull; {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 6: PROFILE ================= */}
       {currentTab === 'profile' && (
         <Profile
           onOpenAuthModal={onOpenAuthModal}

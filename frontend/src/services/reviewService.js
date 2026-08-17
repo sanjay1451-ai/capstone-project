@@ -18,16 +18,60 @@ export const reviewService = {
   },
 
   /**
+   * Post a review via POST /api/reviews
+   * @param {{productId: number, rating: number, comment: string}} data 
+   * @returns {Promise<Object>}
+   */
+  async postReview(data) {
+    try {
+      const response = await api.post('/api/reviews', data);
+      return response.data?.data;
+    } catch (error) {
+      console.error('[ReviewService] Post review error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get all reviews for a product
    * @param {number} productId 
    * @returns {Promise<Array>}
    */
   async getProductReviews(productId) {
     try {
-      const response = await api.get(`/api/products/${productId}/reviews`);
+      const response = await api.get(`/api/reviews/product/${productId}`);
       return response.data?.data || [];
     } catch (error) {
       console.error('[ReviewService] Get reviews error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all reviews for a seller
+   * @param {number} sellerId 
+   * @returns {Promise<Array>}
+   */
+  async getSellerReviews(sellerId) {
+    try {
+      const response = await api.get(`/api/reviews/seller/${sellerId}`);
+      return response.data?.data || [];
+    } catch (error) {
+      console.error('[ReviewService] Get seller reviews error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get reviews written by the current user
+   * @returns {Promise<Array>}
+   */
+  async getMyReviews() {
+    try {
+      const response = await api.get('/api/reviews/my-reviews');
+      return response.data?.data || [];
+    } catch (error) {
+      console.error('[ReviewService] Get my reviews error:', error);
       throw error;
     }
   },

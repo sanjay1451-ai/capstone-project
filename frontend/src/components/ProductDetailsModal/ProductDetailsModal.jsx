@@ -11,7 +11,8 @@ export default function ProductDetailsModal({
   onClose,
   onOpenCheckout,
   onOpenExchange,
-  onOpenAuthModal
+  onOpenAuthModal,
+  onNavigateToMessages
 }) {
   if (!product) return null;
 
@@ -458,6 +459,13 @@ export default function ProductDetailsModal({
         <ContactSellerModal
           product={product}
           onClose={() => setIsContactModalOpen(false)}
+          onNavigateToMessages={(recipient) => {
+            setIsContactModalOpen(false);
+            onClose();
+            if (onNavigateToMessages) {
+              onNavigateToMessages(recipient);
+            }
+          }}
         />
       )}
     </>

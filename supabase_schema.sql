@@ -89,6 +89,18 @@ CREATE TABLE IF NOT EXISTS reviews (
     product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     rating INT CHECK (rating >= 1 AND rating <= 5) NOT NULL,
     comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_reviewer_product UNIQUE (reviewer_id, product_id)
+);
+
+-- 9. MESSAGES TABLE (BUYER-SELLER DIRECT COMMUNICATION)
+CREATE TABLE IF NOT EXISTS messages (
+    id BIGSERIAL PRIMARY KEY,
+    sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    receiver_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id BIGINT REFERENCES products(id) ON DELETE SET NULL,
+    content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
@@ -108,6 +120,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_product ON orders(product_id);
 CREATE INDEX IF NOT EXISTS idx_exchange_requests_requester ON exchange_requests(requester_id);
 CREATE INDEX IF NOT EXISTS idx_exchange_requests_product ON exchange_requests(product_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at ASC);
 
 -- ===================================================================
 -- SEED DATA (INITIAL CATEGORIES & DEMO USER)

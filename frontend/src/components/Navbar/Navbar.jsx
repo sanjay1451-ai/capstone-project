@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Zap, PlusCircle, ShoppingBag, Layers, Activity, User, LogIn, UserPlus, LogOut, Shield, ChevronDown, ArrowRightLeft, Heart, LayoutDashboard, Tag } from 'lucide-react';
+import { Zap, PlusCircle, ShoppingBag, Layers, Activity, User, LogIn, UserPlus, LogOut, Shield, ChevronDown, ArrowRightLeft, Heart, LayoutDashboard, Tag, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
@@ -8,7 +8,8 @@ export default function Navbar({
   onSelectTab,
   onOpenCreateModal,
   onOpenAuthModal,
-  backendStatus
+  backendStatus,
+  unreadMessagesCount = 0
 }) {
   const { user, isAuthenticated, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -33,7 +34,7 @@ export default function Navbar({
   const handleLogoutClick = () => {
     setIsDropdownOpen(false);
     logout();
-    if (activeTab === 'dashboard' || activeTab === 'profile' || activeTab === 'sell') {
+    if (activeTab === 'dashboard' || activeTab === 'profile' || activeTab === 'sell' || activeTab === 'messages') {
       onSelectTab('home');
     }
   };
@@ -81,6 +82,16 @@ export default function Navbar({
             <Tag size={16} />
             <span>Sell Device</span>
           </button>
+          {isAuthenticated && (
+            <button 
+              className={`nav-link-btn ${activeTab === 'messages' ? 'active' : ''}`}
+              onClick={() => onSelectTab('messages')}
+            >
+              <MessageSquare size={16} />
+              <span>Messages</span>
+              {unreadMessagesCount > 0 && <span className="nav-unread-badge">{unreadMessagesCount}</span>}
+            </button>
+          )}
           {isAuthenticated && (
             <button 
               className={`nav-link-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
@@ -177,6 +188,13 @@ export default function Navbar({
                     >
                       <LayoutDashboard size={16} />
                       <span>User Dashboard</span>
+                    </button>
+                    <button
+                      className={`menu-item-btn ${activeTab === 'messages' ? 'item-active' : ''}`}
+                      onClick={() => handleTabClick('messages')}
+                    >
+                      <MessageSquare size={16} />
+                      <span>Direct Messages</span>
                     </button>
                     <button
                       className={`menu-item-btn ${activeTab === 'sell' ? 'item-active' : ''}`}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, ShoppingBag, Layers, Activity, Plus, User, ShieldCheck, Tag } from 'lucide-react';
+import { ArrowRight, Sparkles, ShoppingBag, Layers, Activity, Plus, User, ShieldCheck, Tag, MessageSquare } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import Hero from '../../components/Hero/Hero';
 import HealthCheck from '../../components/HealthCheck/HealthCheck';
@@ -15,6 +15,7 @@ import ProductListing from '../ProductListing/ProductListing';
 import Categories from '../Categories/Categories';
 import Dashboard from '../Dashboard/Dashboard';
 import Profile from '../Profile/Profile';
+import Messages from '../Messages/Messages';
 import Sell from '../Sell/Sell';
 import { useAuth } from '../../context/AuthContext';
 import { useHealthCheck } from '../../hooks/useHealthCheck';
@@ -23,19 +24,20 @@ import { categoryService } from '../../services/categoryService';
 import './Home.css';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'sell' | 'dashboard' | 'profile' | 'health'
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'products' | 'categories' | 'sell' | 'dashboard' | 'profile' | 'messages' | 'health'
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   
-  // Modals state
+  // Modals & Navigation state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState('login');
   const [checkoutProduct, setCheckoutProduct] = useState(null);
   const [exchangeProduct, setExchangeProduct] = useState(null);
+  const [messagesRecipient, setMessagesRecipient] = useState(null);
 
   const { isAuthenticated, user } = useAuth();
 
@@ -97,12 +99,21 @@ export default function Home() {
     setExchangeProduct(product);
   };
 
+  const handleOpenMessagesWithSeller = (recipient) => {
+    setSelectedProduct(null);
+    setMessagesRecipient(recipient);
+    setActiveTab('messages');
+  };
+
   return (
     <div className="home-page">
       {/* Navigation Header with Live Status & Auth State */}
       <Navbar
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={(tab) => {
+          if (tab !== 'messages') setMessagesRecipient(null);
+          setActiveTab(tab);
+        }}
         onOpenCreateModal={() => handleOpenCreateModal(null)}
         onOpenAuthModal={handleOpenAuthModal}
         backendStatus={status}
@@ -226,7 +237,16 @@ export default function Home() {
           />
         )}
 
-        {/* TAB 5: USER DASHBOARD (LISTINGS, PURCHASES, SALES, EXCHANGES, WISHLIST, PROFILE) */}
+        {/* TAB 5: BUYER-SELLER MESSAGING */}
+        {activeTab === 'messages' && (
+          <Messages
+            initialRecipient={messagesRecipient}
+            onSelectProduct={setSelectedProduct}
+            onOpenAuthModal={handleOpenAuthModal}
+          />
+        )}
+
+        {/* TAB 6: USER DASHBOARD */}
         {activeTab === 'dashboard' && (
           <Dashboard
             initialTab="listings"
@@ -238,7 +258,7 @@ export default function Home() {
           />
         )}
 
-        {/* TAB 6: USER PROFILE DIRECT TAB */}
+        {/* TAB 7: USER PROFILE DIRECT TAB */}
         {activeTab === 'profile' && (
           <Dashboard
             initialTab="profile"
@@ -250,7 +270,7 @@ export default function Home() {
           />
         )}
 
-        {/* TAB 7: API STATUS VIEW */}
+        {/* TAB 8: API STATUS VIEW */}
         {activeTab === 'health' && (
           <div style={{ paddingTop: '2rem' }}>
             <HealthCheck
@@ -273,6 +293,7 @@ export default function Home() {
           onOpenCheckout={handleOpenCheckout}
           onOpenExchange={handleOpenExchange}
           onOpenAuthModal={handleOpenAuthModal}
+          onNavigateToMessages={handleOpenMessagesWithSeller}
         />
       )}
 

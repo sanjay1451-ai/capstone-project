@@ -64,6 +64,21 @@ public class ReviewService {
             throw new IllegalArgumentException("Product not found with ID: " + productId);
         }
 
+        // Prevent duplicate review by same user for the same product
+        boolean alreadyReviewed = fallbackReviews.values().stream()
+                .anyMatch(r -> r.getProductId().equals(productId) && r.getReviewerId().equals(reviewerId));
+
+        if (!alreadyReviewed) {
+            try {
+                List<Review> existing = reviewRepository.findByProductId(productId);
+                alreadyReviewed = existing.stream().anyMatch(r -> r.getReviewerId().equals(reviewerId));
+            } catch (Exception ignored) {}
+        }
+
+        if (alreadyReviewed) {
+            throw new IllegalArgumentException("You have already reviewed this product.");
+        }
+
         Review review = new Review();
         review.setReviewerId(reviewerId);
         review.setProductId(productId);
@@ -116,6 +131,40 @@ public class ReviewService {
                         }
                     } catch (Exception ignored) {}
                     return mapToReviewResponse(r, finalTitle, reviewerName, avatar);
+                })
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .collect(Collectors.toList());
+    }
+
+    public List<ReviewResponseDTO> getSellerReviews(Long sellerId) {
+        List<ProductResponseDTO> allProducts = productService.getProducts(null, null, null, null, null);
+        Set<Long> sellerProductIds = allProducts.stream()
+                .filter(p -> p.getSellerId() != null && p.getSellerId().equals(sellerId))
+                .map(ProductResponseDTO::getId)
+                .collect(Collectors.toSet());
+
+        List<ReviewResponseDTO> reviews = new ArrayList<>();
+        for (Long pId : sellerProductIds) {
+            reviews.addAll(getProductReviews(pId));
+        }
+
+        reviews.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        return reviews;
+    }
+
+    public List<ReviewResponseDTO> getMyReviews(String userEmail) {
+        var userDto = authService.getCurrentUser(userEmail);
+        Long currentUserId = userDto.getId();
+
+        return fallbackReviews.values().stream()
+                .filter(r -> r.getReviewerId().equals(currentUserId))
+                .map(r -> {
+                    String title = "Electronic Device";
+                    try {
+                        var p = productService.getProductById(r.getProductId()).orElse(null);
+                        if (p != null) title = p.getTitle();
+                    } catch (Exception ignored) {}
+                    return mapToReviewResponse(r, title, userDto.getName(), userDto.getProfileImage());
                 })
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .collect(Collectors.toList());

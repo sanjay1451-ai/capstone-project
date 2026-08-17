@@ -1,0 +1,120 @@
+.home-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+.home-categories-section {
+  padding: 1rem 0 3rem;
+}
+
+.section-header-compact {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.section-eyebrow {
+  font-size: 0.78rem;
+  color: var(--emerald-400);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.section-heading-sm {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.view-all-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--emerald-400);
+  transition: gap 0.2s ease;
+  cursor: pointer;
+}
+
+.view-all-link:hover {
+  gap: 0.65rem;
+  color: #ffffff;
+}
+
+.category-chips-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+
+.cat-chip-card {
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid var(--border-subtle);
+  background: var(--grad-card);
+  transition: all 0.2s ease;
+}
+
+.cat-chip-card:hover {
+  border-color: var(--emerald-400);
+  transform: translateY(-2px);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.cat-chip-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chip-arrow {
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.cat-chip-card:hover .chip-arrow {
+  color: var(--emerald-400);
+  transform: translateX(3px);
+}
+
+.featured-products-section {
+  padding: 2.5rem 0 3.5rem;
+}
+
+.home-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.empty-featured {
+  padding: 3rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+}
+
+.text-accent {
+  color: var(--emerald-400);
+}

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none">
+  <defs>
+    <linearGradient id="primaryGradSrc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="50%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="glowGradSrc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  
+  <rect x="4" y="4" width="40" height="40" rx="12" fill="#0F172A" stroke="url(#primaryGradSrc)" stroke-width="2.5" />
+  <rect x="7" y="7" width="34" height="34" rx="9" fill="url(#glowGradSrc)" />
+
+  <circle cx="15" cy="17" r="2.5" fill="#10B981" />
+  <circle cx="33" cy="17" r="2.5" fill="#06B6D4" />
+  <circle cx="24" cy="35" r="2.5" fill="#3B82F6" />
+  
+  <path d="M17.5 17 H30.5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 3"/>
+  <path d="M33 19.5 C33 27 28 33 26 34" stroke="#06B6D4" stroke-width="2" stroke-linecap="round" />
+  <path d="M22 34 C20 33 15 27 15 19.5" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" />
+
+  <path d="M25 14 L19 25 H24 L23 34 L29 23 H24 L25 14 Z" fill="url(#primaryGradSrc)" stroke="#FFFFFF" stroke-width="0.75" stroke-linejoin="round" />
+</svg>

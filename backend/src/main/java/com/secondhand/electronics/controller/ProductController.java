@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -25,18 +26,50 @@ public class ProductController {
 
     /**
      * GET /api/products
-     * Search and list products with optional filters
+     * Search and filter products
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> getProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String status,
             @RequestParam(required = false) String brand,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) String condition,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = "newest") String sort
     ) {
-        List<ProductResponseDTO> products = productService.getProducts(category, status, brand, condition, search);
+        String query = (keyword != null && !keyword.isBlank()) ? keyword : search;
+        List<ProductResponseDTO> products = productService.searchProducts(
+                query, category, brand, minPrice, maxPrice, condition, location, status, sort
+        );
         return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully", products));
+    }
+
+    /**
+     * GET /api/products/search
+     * Optimized search and filter endpoint
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> searchProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) String condition,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = "newest") String sort
+    ) {
+        String query = (keyword != null && !keyword.isBlank()) ? keyword : search;
+        List<ProductResponseDTO> products = productService.searchProducts(
+                query, category, brand, minPrice, maxPrice, condition, location, status, sort
+        );
+        return ResponseEntity.ok(ApiResponse.success("Search results retrieved successfully", products));
     }
 
     /**

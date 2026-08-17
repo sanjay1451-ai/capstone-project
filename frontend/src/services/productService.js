@@ -17,6 +17,21 @@ export const productService = {
   },
 
   /**
+   * Search and filter products with advanced criteria
+   * @param {{keyword?: string, category?: string, brand?: string, minPrice?: number, maxPrice?: number, condition?: string, location?: string, status?: string, sort?: string}} params
+   * @returns {Promise<Array>}
+   */
+  async searchProducts(params = {}) {
+    try {
+      const response = await api.get('/api/products/search', { params });
+      return response.data?.data || [];
+    } catch (error) {
+      console.error('[ProductService] Error searching products:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Fetch single product details by ID
    * @param {number} id 
    * @returns {Promise<Object>}

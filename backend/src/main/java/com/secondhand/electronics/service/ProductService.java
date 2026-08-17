@@ -122,32 +122,92 @@ public class ProductService {
             String condition,
             String search
     ) {
-        try {
-            String catParam = (category != null && !category.isBlank()) ? category : null;
-            String statusParam = (status != null && !status.isBlank()) ? status : null;
-            String brandParam = (brand != null && !brand.isBlank()) ? brand : null;
-            String condParam = (condition != null && !condition.isBlank()) ? condition : null;
-            String searchParam = (search != null && !search.isBlank()) ? search : null;
+        return searchProducts(search, category, brand, null, null, condition, null, status, "newest");
+    }
 
-            List<Product> products = productRepository.searchProducts(catParam, statusParam, brandParam, condParam, searchParam);
+    public List<ProductResponseDTO> searchProducts(
+            String keyword,
+            String category,
+            String brand,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            String condition,
+            String location,
+            String status,
+            String sort
+    ) {
+        List<ProductResponseDTO> results = new ArrayList<>();
+
+        try {
+            String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+            String cat = (category != null && !category.isBlank()) ? category.trim() : null;
+            String br = (brand != null && !brand.isBlank()) ? brand.trim() : null;
+            String cd = (condition != null && !condition.isBlank()) ? condition.trim() : null;
+            String loc = (location != null && !location.isBlank()) ? location.trim() : null;
+            String st = (status != null && !status.isBlank()) ? status.trim() : null;
+
+            List<Product> products = productRepository.advancedSearch(kw, cat, br, cd, loc, minPrice, maxPrice, st);
             if (!products.isEmpty()) {
-                return products.stream().map(this::mapToResponseDTO).collect(Collectors.toList());
+                results = products.stream().map(this::mapToResponseDTO).collect(Collectors.toList());
             }
         } catch (Exception ignored) {
             // DB unreachable; use fallback cache
         }
 
-        // Apply filters to in-memory fallback cache
-        return fallbackCache.values().stream()
-                .filter(p -> category == null || category.isBlank() || p.getCategory().equalsIgnoreCase(category))
-                .filter(p -> status == null || status.isBlank() || (p.getStatus() != null && p.getStatus().equalsIgnoreCase(status)))
-                .filter(p -> brand == null || brand.isBlank() || (p.getBrand() != null && p.getBrand().equalsIgnoreCase(brand)))
-                .filter(p -> condition == null || condition.isBlank() || (p.getCondition() != null && p.getCondition().equalsIgnoreCase(condition)))
-                .filter(p -> search == null || search.isBlank() ||
-                        (p.getTitle() != null && p.getTitle().toLowerCase().contains(search.toLowerCase())) ||
-                        (p.getDescription() != null && p.getDescription().toLowerCase().contains(search.toLowerCase()))
-                )
-                .collect(Collectors.toList());
+        if (results.isEmpty()) {
+            // Apply filtering directly to in-memory fallback cache
+            results = fallbackCache.values().stream()
+                    .filter(p -> category == null || category.isBlank() || p.getCategory().equalsIgnoreCase(category.trim()))
+                    .filter(p -> status == null || status.isBlank() || (p.getStatus() != null && p.getStatus().equalsIgnoreCase(status.trim())))
+                    .filter(p -> brand == null || brand.isBlank() || (p.getBrand() != null && p.getBrand().equalsIgnoreCase(brand.trim())))
+                    .filter(p -> condition == null || condition.isBlank() || (p.getCondition() != null && p.getCondition().equalsIgnoreCase(condition.trim())))
+                    .filter(p -> location == null || location.isBlank() || (p.getLocation() != null && p.getLocation().toLowerCase().contains(location.toLowerCase().trim())))
+                    .filter(p -> minPrice == null || (p.getPrice() != null && p.getPrice().compareTo(minPrice) >= 0))
+                    .filter(p -> maxPrice == null || (p.getPrice() != null && p.getPrice().compareTo(maxPrice) <= 0))
+                    .filter(p -> keyword == null || keyword.isBlank() ||
+                            (p.getTitle() != null && p.getTitle().toLowerCase().contains(keyword.toLowerCase().trim())) ||
+                            (p.getDescription() != null && p.getDescription().toLowerCase().contains(keyword.toLowerCase().trim())) ||
+                            (p.getBrand() != null && p.getBrand().toLowerCase().contains(keyword.toLowerCase().trim())) ||
+                            (p.getModel() != null && p.getModel().toLowerCase().contains(keyword.toLowerCase().trim())) ||
+                            (p.getCategory() != null && p.getCategory().toLowerCase().contains(keyword.toLowerCase().trim()))
+                    )
+                    .collect(Collectors.toList());
+        }
+
+        // Apply Sorting
+        if (sort != null) {
+            switch (sort.toLowerCase().trim()) {
+                case "price_asc":
+                case "price-low-high":
+                case "price_low_to_high":
+                    results.sort(Comparator.comparing(ProductResponseDTO::getPrice, Comparator.nullsLast(BigDecimal::compareTo)));
+                    break;
+                case "price_desc":
+                case "price-high-low":
+                case "price_high_to_low":
+                    results.sort((a, b) -> {
+                        if (a.getPrice() == null) return 1;
+                        if (b.getPrice() == null) return -1;
+                        return b.getPrice().compareTo(a.getPrice());
+                    });
+                    break;
+                case "oldest":
+                case "date_asc":
+                    results.sort(Comparator.comparing(ProductResponseDTO::getCreatedAt, Comparator.nullsLast(LocalDateTime::compareTo)));
+                    break;
+                case "newest":
+                case "date_desc":
+                default:
+                    results.sort((a, b) -> {
+                        if (a.getCreatedAt() == null) return 1;
+                        if (b.getCreatedAt() == null) return -1;
+                        return b.getCreatedAt().compareTo(a.getCreatedAt());
+                    });
+                    break;
+            }
+        }
+
+        return results;
     }
 
     public Optional<ProductResponseDTO> getProductById(Long id) {
